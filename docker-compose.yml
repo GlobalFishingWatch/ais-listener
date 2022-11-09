@@ -1,0 +1,30 @@
+version: '3.9'
+services:
+  pipeline:
+    build:
+      context: .
+    volumes:
+      - ".:/opt/code"
+      - "gcp:/root/.config/"
+
+  gcloud:
+    entrypoint: gcloud
+    build:
+      context: .
+    volumes:
+      - ".:/opt/code"
+      - "gcp:/root/.config/"
+
+  bash:
+    entrypoint: /bin/bash
+    build:
+      context: .
+    volumes:
+      - ".:/opt/code"
+      - "gcp:/root/.config/"
+
+volumes:
+  gcp:
+    external: true
+
+

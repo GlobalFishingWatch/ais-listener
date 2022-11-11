@@ -1,6 +1,9 @@
 version: '3.9'
 services:
-  pipeline:
+  server:
+    entrypoint:  [ "python", "-u", "main.py", "-v", "listen" ]
+    ports:
+      - "4124:4124/udp"
     build:
       context: .
     volumes:
@@ -26,5 +29,3 @@ services:
 volumes:
   gcp:
     external: true
-
-

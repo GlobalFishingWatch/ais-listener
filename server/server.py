@@ -1,0 +1,118 @@
+import logging
+import multiprocessing
+import socket
+import time
+from datetime import datetime
+from ais_tools.nmea import join_multipart_stream
+from cloudpathlib import GSPath
+import uuid
+
+class UdpServer(object):
+    def __init__(self, log, hostname="0.0.0.0", port=4124, bufsize=1024):
+        self.log = log
+        self.hostname = hostname
+        self.port = port
+        self.bufsize = bufsize
+        self.queue = multiprocessing.SimpleQueue()
+        self.max_time_window = 500
+        self.max_message_window = 1000
+        self.use_station_id = False
+
+
+    def read_from_port(self):
+        sock = socket.socket(socket.AF_INET,        # Internet
+                             socket.SOCK_DGRAM)     # UDP
+        sock.bind((self.hostname, self.port))
+        while True:
+            data, addr = sock.recvfrom(self.bufsize)
+            self.queue.put((data, addr))
+
+    def read_from_queue(self):
+        while True:
+            data, addr = self.queue.get()
+            # self.log.info(f'{addr} {data}')
+            yield data.decode('utf-8')
+
+    def join_multiline(self, lines):
+        for line in join_multipart_stream(lines,
+                                               max_time_window=self.max_time_window,
+                                               max_message_window=self.max_message_window,
+                                               use_station_id=self.use_station_id):
+            yield line
+
+    def write_to_pubsub(self, data):
+        self.log.info(f"{data}")
+
+    def write_to_gcs(self, data):
+        self.log.info(f"{data}")
+
+    def listen(self):
+        self.log.info(f'listening on {self.hostname}:{self.port}')
+
+        process = multiprocessing.Process(target=UdpServer.read_from_port, args=(self,))
+        process.daemon = True
+        process.start()
+
+        yield from self.read_from_queue()
+        # lines = self.read_from_queue()
+        # lines = self.join_multiline(lines)
+        # for line in lines:
+        #     self.write_to_pubsub(line)
+
+
+class GCSShardWriter(object):
+    def __init__(self, gcs_dir, source, file_suffix, shard_interval=600, log=None):
+        self.gcs_dir = gcs_dir
+        self.source = source
+        self.file_suffix = file_suffix
+        self.shard_interval = shard_interval
+        self.log = log or logging.getLogger('main')
+
+        self._file = None
+        self._file_start_time = time.time()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self._close()
+
+    def _close(self):
+        if self._file:
+            self._file.close()
+            self.log.debug('Closing file')
+        self._file = None
+
+    def _open(self):
+        if self._file:
+            self._close()
+
+        now = datetime.utcnow()
+        dt = now.strftime('%Y%m%d')
+        tm = now.strftime('%H%M%S')
+        hash = uuid.uuid4()
+
+        filename = f'{self.file_suffix}_{dt}_{tm}_{hash}.nmea'
+        f = GSPath(self.gcs_dir) / self.source / dt / filename
+        self.log.info(f'Writing to {f.as_uri()}')
+        self._file = f.open('w')
+        self._file_start_time = time.time()
+
+    def open(self):
+        self._open()
+
+    def close(self):
+        self._close()
+
+    def is_stale(self):
+        file_active_interval = time.time() - self._file_start_time
+        return self._file is None or file_active_interval > self.shard_interval
+
+    def write_line(self, line):
+        if self.is_stale():
+            self._close()
+            self._open()
+
+        self._file.write(line)
+        self._file.write('\n')
+        self.log.debug(line)

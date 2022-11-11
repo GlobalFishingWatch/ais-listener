@@ -7,6 +7,14 @@ import argparse
 import logging
 import os
 import sys
+from enum import Enum
+from enum import unique
+
+
+@unique
+class ExitCode(Enum):
+    SUCCESS = 0
+    FAIL = 1
 
 
 def valid_date(s):
@@ -37,6 +45,24 @@ def setup_logging(verbosity):
                             (os.getenv('LOGLEVEL', 'WARNING')).upper())
     verbosity = min(verbosity, 2)
     loglevel = base_loglevel - (verbosity * 10)
-    logging.basicConfig(stream=sys.stdout,
-                        level=loglevel,
-                        format='%(message)s')
+
+
+    # create logger
+    log = logging.getLogger('main')
+    log.propagate = False
+    log.setLevel(loglevel)
+
+    # create console handler and set level
+    ch = logging.StreamHandler(stream=sys.stdout)
+    ch.setLevel(loglevel)
+
+    # create formatter
+    formatter = logging.Formatter('%(message)s')
+
+    # add formatter to ch
+    ch.setFormatter(formatter)
+
+    # add ch to logger
+    log.addHandler(ch)
+
+    return log

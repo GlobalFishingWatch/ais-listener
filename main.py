@@ -15,8 +15,8 @@ import logging
 
 #TODO: Edit these
 PIPELINE_VERSION = '0.0.1'
-PIPELINE_NAME = '[Example pipeline]'
-PIPELINE_DESCRIPTION = 'An example pipeline that computes total fishing hours by flag state'
+PIPELINE_NAME = 'AIS Listener'
+PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP and publishes them to pubsub'
 
 # Some optional git parameters provided as environment variables.  Used for logging.
 COMMIT_SHA = os.getenv('COMMIT_SHA', '')
@@ -48,38 +48,55 @@ parser.add_argument('--project', type=str,
                     help='GCP project id (default: %(default)s)',
                     default='world-fishing-827')
 
-parser.add_argument('--start_date', type=valid_date,
-                    help='Start date. '
-                         'Format: YYYY-MM-DD (default: %(default)s)',
-                    default='2016-01-01')
 
-parser.add_argument('--end_date', type=valid_date,
-                    help='End date. '
-                         'Format: YYYY-MM-DD (default: %(default)s)',
-                    default='2016-12-31')
-
-parser.add_argument('--dest_fishing_hours_flag_table', type=str,
-                    help='Destination table for fishing hours by flag state (default: %(default)s)',
-                    default='world-fishing-827.scratch_public_ttl120.example_fishing_hours_by_flag')
 
 
 ### operations
 subparsers = parser.add_subparsers(dest='operation', required=True)
-fishing_hours_args = subparsers.add_parser('fishing_hours', help="Create the fishing hours table")
-validate_args = subparsers.add_parser('validate', help="Validate the output table")
+server_args = subparsers.add_parser('server', help="listen to UDP")
+client_args = subparsers.add_parser('client', help="Send lines from a file over UDP")
 
-fishing_hours_args.add_argument('--source_fishing_effort_table', type=str,
-                                help='Source table for fishing hours (default: %(default)s)',
-                                default='global-fishing-watch.global_footprint_of_fisheries.fishing_effort')
+server_args.add_argument('--udp_port', type=int,
+                         help='UDP port to listen (default: %(default)s)',
+                         default=4124)
+# server_args.add_argument('--pubsub_topic', type=str,
+#                          help='pubsub topic to publish to'
+#                               '(default: %(default)s)',
+#                          default='ais_listener_dev')
+server_args.add_argument('--buffer_size', type=int,
+                         help='size in bytes for the internal buffer'
+                              '(default: %(default)s)',
+                         default=1024)
+server_args.add_argument('--gcs_dir', type=str,
+                         help='GCS directory to write nmea shard files'
+                              '(default: %(default)s)',
+                         default='gs://scratch-paul-ttl100/ais-listener/')
+server_args.add_argument('--source', type=str,
+                         help='Source name to apply to all received NMEA'
+                              '(default: %(default)s)',
+                         default='ais-listener')
+server_args.add_argument('--shard_interval', type=int,
+                         help='Maximum interval in seconds between the first line and last line written to a '
+                              'single shard file'
+                              '(default: %(default)s)',
+                         default=600)
 
-fishing_hours_args.add_argument('--table_description', type=str,
-                                help='Additional text to include in the table description',
-                                default='Example table from pipe-python-prototype-template.  Ok to delete')
+client_args.add_argument('--server_ip', type=str,
+                         help='IP address of server to send to (default: %(default)s)',
+                         default="localhost")
+client_args.add_argument('--udp_port', type=int,
+                         help='UDP port to send to (default: %(default)s)',
+                         default=4124)
+client_args.add_argument('--filename', type=str,
+                         help='name of file to read from (default: %(default)s)',
+                         default="sample/nmea.txt")
+client_args.add_argument('--delay', type=float,
+                         help='Delay in seconds between messages (default: %(default)s)',
+                         default=1)
 
 
 args = parser.parse_args()
-setup_logging(args.verbosity)
-log = logging.getLogger()
+log = setup_logging(args.verbosity)
 
 args.COMMIT_SHA = COMMIT_SHA
 args.COMMIT_BRANCH = COMMIT_BRANCH

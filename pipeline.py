@@ -33,7 +33,7 @@ class Pipeline:
                 gcs_dir=self.args.gcs_dir,
                 source=self.args.source,
                 file_suffix=self.args.source,
-                shard_interval=10
+                shard_interval=self.args.shard_interval
                 ) as writer:
             for line in server.listen():
                 writer.write_line(line)

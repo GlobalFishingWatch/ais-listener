@@ -8,7 +8,7 @@ from cloudpathlib import GSPath
 import uuid
 
 class UdpServer(object):
-    def __init__(self, log, hostname="0.0.0.0", port=4124, bufsize=1024):
+    def __init__(self, log, hostname="0.0.0.0", port=10110, bufsize=1024):
         self.log = log
         self.hostname = hostname
         self.port = port

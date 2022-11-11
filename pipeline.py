@@ -28,7 +28,7 @@ class Pipeline:
 
 
     def run_server(self):
-        server = UdpServer(log=self.log)
+        server = UdpServer(log=self.log, port=self.args.udp_port)
         with GCSShardWriter(
                 gcs_dir=self.args.gcs_dir,
                 source=self.args.source,

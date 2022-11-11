@@ -13,7 +13,6 @@ from util.argparse import setup_logging
 from pipeline import Pipeline
 import logging
 
-#TODO: Edit these
 PIPELINE_VERSION = '0.0.1'
 PIPELINE_NAME = 'AIS Listener'
 PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP and publishes them to pubsub'
@@ -24,7 +23,6 @@ COMMIT_BRANCH = os.getenv('COMMIT_BRANCH', '')
 COMMIT_REPO = os.getenv('COMMIT_REPO', '')
 
 
-#TODO: modify command line parameters as needed
 parser = argparse.ArgumentParser(description=f'{PIPELINE_NAME} {PIPELINE_VERSION} - {PIPELINE_DESCRIPTION}')
 
 ### Common arguments
@@ -58,11 +56,7 @@ client_args = subparsers.add_parser('client', help="Send lines from a file over 
 
 server_args.add_argument('--udp_port', type=int,
                          help='UDP port to listen (default: %(default)s)',
-                         default=4124)
-# server_args.add_argument('--pubsub_topic', type=str,
-#                          help='pubsub topic to publish to'
-#                               '(default: %(default)s)',
-#                          default='ais_listener_dev')
+                         default=10110)
 server_args.add_argument('--buffer_size', type=int,
                          help='size in bytes for the internal buffer'
                               '(default: %(default)s)',
@@ -86,7 +80,7 @@ client_args.add_argument('--server_ip', type=str,
                          default="localhost")
 client_args.add_argument('--udp_port', type=int,
                          help='UDP port to send to (default: %(default)s)',
-                         default=4124)
+                         default=10110)
 client_args.add_argument('--filename', type=str,
                          help='name of file to read from (default: %(default)s)',
                          default="sample/nmea.txt")

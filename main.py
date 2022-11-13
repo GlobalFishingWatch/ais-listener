@@ -73,7 +73,7 @@ server_args.add_argument('--shard_interval', type=int,
                          help='Maximum interval in seconds between the first line and last line written to a '
                               'single shard file'
                               '(default: %(default)s)',
-                         default=600)
+                         default=300)
 
 client_args.add_argument('--server_ip', type=str,
                          help='IP address of server to send to (default: %(default)s)',

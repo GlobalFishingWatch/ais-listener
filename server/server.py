@@ -7,6 +7,8 @@ from datetime import datetime
 from ais_tools.nmea import join_multipart_stream
 from cloudpathlib import GSPath
 import uuid
+import gzip
+
 
 class UdpServer(object):
     def __init__(self, log, hostname="0.0.0.0", port=10110, bufsize=1024, timeout=10):
@@ -68,6 +70,7 @@ class GCSShardWriter(object):
         self.log = log or logging.getLogger('main')
 
         self._file = None
+        self._gz_file = None
         self._file_start_time = time.time()
         self._line_count = 0
 
@@ -79,9 +82,11 @@ class GCSShardWriter(object):
 
     def _close(self):
         if self._file:
+            self._gz_file.close()
             self._file.close()
             self.log.info(f'Wrote {self._line_count} lines')
         self._file = None
+        self._gz_file = None
         self._line_count = 0
 
     def _open(self):
@@ -93,10 +98,11 @@ class GCSShardWriter(object):
         tm = now.strftime('%H%M%S')
         hash = uuid.uuid4()
 
-        filename = f'{self.file_suffix}_{dt}_{tm}_{hash}.nmea'
+        filename = f'{self.file_suffix}_{dt}_{tm}_{hash}.nmea.gz'
         f = GSPath(self.gcs_dir) / dt / filename
         self.log.info(f'Writing to {f.as_uri()}')
-        self._file = f.open('w')
+        self._file = f.open('wb')
+        self._gz_file = gzip.GzipFile(mode='w', fileobj=self._file)
         self._file_start_time = time.time()
         self._line_count = 0
 
@@ -115,8 +121,7 @@ class GCSShardWriter(object):
             self._close()
             self._open()
 
-        self._file.write(line)
-        self._file.write('\n')
+        self._gz_file.write(line.encode('utf-8') + b'\n')
         self.log.debug(line)
         self._line_count += 1
 

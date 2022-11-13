@@ -44,7 +44,6 @@ class Pipeline:
         server.run()
         with GCSShardWriter(
                 gcs_dir=self.args.gcs_dir,
-                source=self.args.source,
                 file_suffix=self.args.source,
                 shard_interval=self.args.shard_interval
                 ) as writer:

@@ -61,9 +61,8 @@ class UdpServer(object):
 
 
 class GCSShardWriter(object):
-    def __init__(self, gcs_dir, source, file_suffix, shard_interval=600, log=None):
+    def __init__(self, gcs_dir, file_suffix, shard_interval=600, log=None):
         self.gcs_dir = gcs_dir
-        self.source = source
         self.file_suffix = file_suffix
         self.shard_interval = shard_interval
         self.log = log or logging.getLogger('main')
@@ -95,7 +94,7 @@ class GCSShardWriter(object):
         hash = uuid.uuid4()
 
         filename = f'{self.file_suffix}_{dt}_{tm}_{hash}.nmea'
-        f = GSPath(self.gcs_dir) / self.source / dt / filename
+        f = GSPath(self.gcs_dir) / dt / filename
         self.log.info(f'Writing to {f.as_uri()}')
         self._file = f.open('w')
         self._file_start_time = time.time()

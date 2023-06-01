@@ -7,8 +7,8 @@ import socket
 import time
 from server.server import UdpServer
 from server.server import GCSShardWriter
-from ais_tools.tagblock import checksumStr
-
+from util.nmea import format_nmea
+from util.sources import load_source_ip_map
 
 class Pipeline:
     def __init__(self, args):
@@ -28,18 +28,14 @@ class Pipeline:
         """
         return vars(self.args)
 
-    def create_tagblock(self, source, timestamp):
-        body = f's:{source},c:{timestamp:0.0f}'
-        checksum = checksumStr(body)
-        return f'{body}*{checksum}'
 
-    def format_nmea(self, messages):
-        for data, source, timestamp in messages:
-            tagblock = self.create_tagblock(source, timestamp)
-            for line in data.splitlines():
-                yield f'\\{tagblock}\\{line}'
+    def debug_log_messages(self, messages):
+        for message in messages:
+            self.log.debug(message)
+            yield message
 
     def run_server(self):
+        source_ip_map = load_source_ip_map(self.args.source_ip_map, default_source=self.args.source)
         server = UdpServer(log=self.log, port=self.args.udp_port)
         server.run()
         with GCSShardWriter(
@@ -49,7 +45,8 @@ class Pipeline:
                 ) as writer:
             while True:
                 messages = server.read_messages()
-                lines = self.format_nmea(messages)
+                lines = format_nmea(messages, source_ip_map)
+                lines = self.debug_log_messages(lines)
                 writer.write_lines(lines)
                 if writer.is_stale():
                     writer.close()

@@ -12,6 +12,8 @@ source_ip_map = {
         '\\t:source,c:123*16\\message'),
     ('message', '127.0.0.1', 123,
         '\\t:localhost,c:123*66\\message'),
+    ('message\n', '127.0.0.1', 123,
+     '\\t:localhost,c:123*66\\message'),
     ('!AIVDM,1,1,,A,13prmQ?P001EOA4OC3h@u?vl20SR,0*7F', 'source', 123,
         '\\t:source,c:123*16\\!AIVDM,1,1,,A,13prmQ?P001EOA4OC3h@u?vl20SR,0*7F'),
     ('\\t:other\\!AIVDM,1,1,,A,13prmQ?P001EOA4OC3h@u?vl20SR,0*7F', 'source', 123,
@@ -29,4 +31,19 @@ def test_format_nmea(message, source, timestamp, expected):
     messages = [(message, source, timestamp)]
     formatted = list(format_nmea(messages, source_ip_map))
     expected = [expected]
+    assert formatted == expected
+
+@pytest.mark.parametrize("message,source,timestamp,expected", [
+    ('', 'source', 123,
+     []),
+    ('message1\n', 'source', 123,
+     ['\\t:source,c:123*16\\message1']
+     ),
+    ('message1\nmessage2', 'source', 123,
+     ['\\t:source,c:123*16\\message1', '\\t:source,c:123*16\\message2']
+    ),
+])
+def test_multiline(message, source, timestamp, expected):
+    messages = [(message, source, timestamp)]
+    formatted = list(format_nmea(messages, source_ip_map))
     assert formatted == expected

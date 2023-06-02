@@ -21,10 +21,12 @@ def update_tagblock(nmea, source, timestamp):
 def format_nmea(messages, source_ip_lookup):
     for message, source, timestamp in messages:
         source = source_ip_lookup.get(source, source)
-        try:
-            message = update_tagblock(message, source, timestamp)
-        except DecodeError:
-            pass  # If we are unable to decode an existing tagblock, then just pass through the
-            # original message unmodified
-        yield message
+        lines = [line for line in message.split('\n') if line]
+        for line in lines:
+            try:
+                line = update_tagblock(line, source, timestamp)
+            except DecodeError:
+                pass  # If we are unable to decode an existing tagblock, then just pass through the
+                # original message unmodified
+            yield line
 

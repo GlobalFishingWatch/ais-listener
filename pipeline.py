@@ -29,11 +29,6 @@ class Pipeline:
         return vars(self.args)
 
 
-    def debug_log_messages(self, messages):
-        for message in messages:
-            self.log.debug(message)
-            yield message
-
     def run_server(self):
         source_ip_map = load_source_ip_map(self.args.source_ip_map, default_source=self.args.source)
         server = UdpServer(log=self.log, port=self.args.udp_port)
@@ -46,7 +41,6 @@ class Pipeline:
             while True:
                 messages = server.read_messages()
                 lines = format_nmea(messages, source_ip_map)
-                lines = self.debug_log_messages(lines)
                 writer.write_lines(lines)
                 if writer.is_stale():
                     writer.close()

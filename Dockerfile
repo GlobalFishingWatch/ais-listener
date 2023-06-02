@@ -19,6 +19,6 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt
 COPY . .
 
-EXPOSE 4124/udp
+EXPOSE 10110/udp
 
-ENTRYPOINT [ "python", "-u", "main.py", "-v", "server" ]
+ENTRYPOINT [ "python", "-u", "main.py"]

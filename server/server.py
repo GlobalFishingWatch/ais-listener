@@ -11,7 +11,7 @@ import gzip
 
 
 class UdpServer(object):
-    def __init__(self, log, hostname="0.0.0.0", port=10110, bufsize=1024, timeout=10):
+    def __init__(self, log, hostname="0.0.0.0", port=10110, bufsize=4096, timeout=10):
         self.log = log
         self.hostname = hostname
         self.port = port

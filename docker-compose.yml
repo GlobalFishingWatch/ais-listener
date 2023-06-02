@@ -1,9 +1,9 @@
 version: '3.9'
 services:
   server:
-    entrypoint:  [ "python", "-u", "main.py", "-v", "listen" ]
+    entrypoint:  [ "python", "-u", "main.py", "-vv", "server" ]
     ports:
-      - "4124:4124/udp"
+      - "10110:10110/udp"
     build:
       context: .
     volumes:

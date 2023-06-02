@@ -22,6 +22,8 @@ source_ip_map = {
         '\\t:source,c:999,s:station*00\\!AIVDM,1,1,,A,13prmQ?P001EOA4OC3h@u?vl20SR,0*7F'),
     ('\\c:bad_value\\message', '127.0.0.1', 123,
         '\\c:bad_value\\message'),
+    ('\\s:rMT5858,*0E\\!AIVDM,1,1,,A,13SeLS7P1j15l@FHcA<PM?vN05`P,0*26', '127.0.0.1', 123,
+     '\\s:rMT5858,t:localhost,c:123*68\\!AIVDM,1,1,,A,13SeLS7P1j15l@FHcA<PM?vN05`P,0*26'),
 ])
 def test_format_nmea(message, source, timestamp, expected):
     messages = [(message, source, timestamp)]

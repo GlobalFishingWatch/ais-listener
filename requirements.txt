@@ -1,2 +1,5 @@
-ais-tools @ https://codeload.github.com/globalfishingwatch/ais-tools/tar.gz/v0.1.4-rc.2
+ais-tools @ https://codeload.github.com/globalfishingwatch/ais-tools/tar.gz/v0.1.5.dev7
 cloudpathlib[gs]
+pytest
+pytest-pythonpath
+pyyaml

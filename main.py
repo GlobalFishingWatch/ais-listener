@@ -1,8 +1,7 @@
 """
-TODO: Edit this
-[Example pipeline]
+AIS Listener
 
-Replace this with a description of what your pipeline does
+Listens on a UDP port and writes received NMEA messages to sharded files in GCS
 """
 
 import argparse
@@ -13,9 +12,9 @@ from util.argparse import setup_logging
 from pipeline import Pipeline
 import logging
 
-PIPELINE_VERSION = '0.0.1'
+PIPELINE_VERSION = '0.0.2'
 PIPELINE_NAME = 'AIS Listener'
-PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP and publishes them to pubsub'
+PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP and writes them to sharded files in GCS'
 
 # Some optional git parameters provided as environment variables.  Used for logging.
 COMMIT_SHA = os.getenv('COMMIT_SHA', '')
@@ -27,7 +26,7 @@ parser = argparse.ArgumentParser(description=f'{PIPELINE_NAME} {PIPELINE_VERSION
 
 ### Common arguments
 parser.add_argument('--test', action='store_true',
-                    help='Test mode - print query and exit', default=False)
+                    help='Test mode - this setting is currently ignored.  Use -v or -vv when testing', default=False)
 
 parser.add_argument('-v', '--verbose',
                     action='count',
@@ -66,9 +65,15 @@ server_args.add_argument('--gcs_dir', type=str,
                               '(default: %(default)s)',
                          default='gs://scratch-paul-ttl100/ais-listener/')
 server_args.add_argument('--source', type=str,
-                         help='Source name to apply to all received NMEA'
+                         help='Source name to apply to all received NMEA.  If source-ip-map is specified, '
+                              'then this value will be applied to messages received from any IP that is not '
+                              'in the mapping file.'
                               '(default: %(default)s)',
                          default='ais-listener')
+server_args.add_argument('--source-ip-map', type=str,
+                         help='File to read to get mapping of IP address to source'
+                              '(default: %(default)s)',
+                         default='sample/sources.yaml')
 server_args.add_argument('--shard_interval', type=int,
                          help='Maximum interval in seconds between the first line and last line written to a '
                               'single shard file'

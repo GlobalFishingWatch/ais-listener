@@ -53,13 +53,13 @@ subparsers = parser.add_subparsers(dest='operation', required=True)
 server_args = subparsers.add_parser('server', help="listen to UDP")
 client_args = subparsers.add_parser('client', help="Send lines from a file over UDP")
 
-server_args.add_argument('--udp_port', type=int,
-                         help='UDP port to listen (default: %(default)s)',
-                         default=10110)
+server_args.add_argument('--udp_port_range', type=int, nargs=2,
+                         help='UDP port range to listen (default: %(default)s)',
+                         default=[10110, 10110])
 server_args.add_argument('--buffer_size', type=int,
                          help='size in bytes for the internal buffer'
                               '(default: %(default)s)',
-                         default=1024)
+                         default=4096)
 server_args.add_argument('--gcs_dir', type=str,
                          help='GCS directory to write nmea shard files'
                               '(default: %(default)s)',
@@ -93,25 +93,36 @@ client_args.add_argument('--delay', type=float,
                          help='Delay in seconds between messages (default: %(default)s)',
                          default=1)
 
+def expand_udp_port_range():
+    min_ports = 1
+    max_ports = 10
+    first, last = args.udp_port_range
+    port_list = list(range(first, last + 1))
+    num_ports = len(port_list)
+    if  not(min_ports <= num_ports <= max_ports):
+        parser.error(f"invalid udp_port_range containing {num_ports} ports. Must contain between {min_ports} and {max_ports} ports")
+    return port_list
 
-args = parser.parse_args()
-log = setup_logging(args.verbosity)
-
-args.COMMIT_SHA = COMMIT_SHA
-args.COMMIT_BRANCH = COMMIT_BRANCH
-args.COMMIT_REPO = COMMIT_REPO
-
-log.info(f'{PIPELINE_NAME} v{PIPELINE_VERSION}')
-log.info(f'{PIPELINE_DESCRIPTION}')
-log.info(pretty_print_args(args))
-
-args.PIPELINE_VERSION = PIPELINE_VERSION
-args.PIPELINE_NAME = PIPELINE_NAME
-args.PIPELINE_DESCRIPTION = PIPELINE_DESCRIPTION
-
-pipeline = Pipeline(args)
 
 if __name__ == '__main__':
+    args = parser.parse_args()
+    log = setup_logging(args.verbosity)
+    args.udp_port_list = expand_udp_port_range() if args.operation == 'server' else []
+
+    args.COMMIT_SHA = COMMIT_SHA
+    args.COMMIT_BRANCH = COMMIT_BRANCH
+    args.COMMIT_REPO = COMMIT_REPO
+
+    log.info(f'{PIPELINE_NAME} v{PIPELINE_VERSION}')
+    log.info(f'{PIPELINE_DESCRIPTION}')
+    log.info(pretty_print_args(args))
+
+    args.PIPELINE_VERSION = PIPELINE_VERSION
+    args.PIPELINE_NAME = PIPELINE_NAME
+    args.PIPELINE_DESCRIPTION = PIPELINE_DESCRIPTION
+
+    pipeline = Pipeline(args)
+
     result = pipeline.run()
 
     # exit code=0 indicates success.  Any other value indicates a failure

@@ -53,14 +53,14 @@ subparsers = parser.add_subparsers(dest='operation', required=True)
 server_args = subparsers.add_parser('server', help="listen to UDP")
 client_args = subparsers.add_parser('client', help="Send lines from a file over UDP")
 
-server_args.add_argument('--udp_port_range', type=int, nargs=2,
+server_args.add_argument('--udp-port-range', type=int, nargs=2,
                          help='UDP port range to listen (default: %(default)s)',
                          default=[10110, 10110])
-server_args.add_argument('--buffer_size', type=int,
+server_args.add_argument('--buffer-size', type=int,
                          help='size in bytes for the internal buffer'
                               '(default: %(default)s)',
                          default=4096)
-server_args.add_argument('--gcs_dir', type=str,
+server_args.add_argument('--gcs-dir', type=str,
                          help='GCS directory to write nmea shard files'
                               '(default: %(default)s)',
                          default='gs://scratch-paul-ttl100/ais-listener/')
@@ -70,20 +70,20 @@ server_args.add_argument('--source', type=str,
                               'in the mapping file.'
                               '(default: %(default)s)',
                          default='ais-listener')
-server_args.add_argument('--source-ip-map', type=str,
-                         help='File to read to get mapping of IP address to source'
+server_args.add_argument('--source-port-map', type=str,
+                         help='File to read to get mapping of listening ports to source names'
                               '(default: %(default)s)',
                          default='sample/sources.yaml')
-server_args.add_argument('--shard_interval', type=int,
+server_args.add_argument('--shard-interval', type=int,
                          help='Maximum interval in seconds between the first line and last line written to a '
                               'single shard file'
                               '(default: %(default)s)',
                          default=300)
 
-client_args.add_argument('--server_ip', type=str,
+client_args.add_argument('--server-ip', type=str,
                          help='IP address of server to send to (default: %(default)s)',
                          default="localhost")
-client_args.add_argument('--udp_port', type=int,
+client_args.add_argument('--udp-port', type=int,
                          help='UDP port to send to (default: %(default)s)',
                          default=10110)
 client_args.add_argument('--filename', type=str,

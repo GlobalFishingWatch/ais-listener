@@ -29,17 +29,17 @@ class UdpServer(object):
         sock.bind((self.hostname, port))
         while True:
             data, addr = sock.recvfrom(self.bufsize)
-            message = data, addr, time.time()
+            message = data, addr, time.time(), port
             self.queue.put_nowait(message)
 
     def read_from_queue(self):
         empty = False
         while not empty:
             try:
-                data, addr, timestamp = self.queue.get(timeout=self.timeout)
+                data, addr, timestamp, port = self.queue.get(timeout=self.timeout)
                 data = data.decode('utf-8').strip()
                 if data:
-                    yield data, addr[0], timestamp
+                    yield data, addr[0], timestamp, port
             except queue.Empty:
                 self.log.debug(f'No messages received for {self.timeout} seconds')
                 empty = True

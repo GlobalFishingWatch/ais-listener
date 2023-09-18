@@ -18,9 +18,11 @@ def update_tagblock(nmea, source, timestamp):
     return join_tagblock(tagblock_str, nmea)
 
 
-def format_nmea(messages, source_ip_lookup):
-    for message, source, timestamp in messages:
-        source = source_ip_lookup.get(source, source)
+def format_nmea(messages, source_port_lookup):
+    for message, addr, timestamp, port in messages:
+        source = source_port_lookup.get(port)
+        if not source:
+            source = f'ais-listener-{port}'
         lines = [line for line in message.split('\n') if line]
         for line in lines:
             try:

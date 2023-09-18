@@ -11,10 +11,10 @@ import gzip
 
 
 class UdpServer(object):
-    def __init__(self, log, hostname="0.0.0.0", port=10110, bufsize=4096, timeout=10):
+    def __init__(self, log, hostname="0.0.0.0", ports=(10110,), bufsize=4096, timeout=10):
         self.log = log
         self.hostname = hostname
-        self.port = port
+        self.ports = ports
         self.bufsize = bufsize
         self.queue = multiprocessing.Queue()
         self.max_time_window = 500
@@ -23,40 +23,33 @@ class UdpServer(object):
         self.timeout = timeout
 
 
-    def read_from_port(self):
+    def read_from_port(self, port):
         sock = socket.socket(socket.AF_INET,        # Internet
                              socket.SOCK_DGRAM)     # UDP
-        sock.bind((self.hostname, self.port))
+        sock.bind((self.hostname, port))
         while True:
             data, addr = sock.recvfrom(self.bufsize)
-            message = data, addr, time.time()
+            message = data, addr, time.time(), port
             self.queue.put_nowait(message)
 
     def read_from_queue(self):
         empty = False
         while not empty:
             try:
-                data, addr, timestamp = self.queue.get(timeout=self.timeout)
+                data, addr, timestamp, port = self.queue.get(timeout=self.timeout)
                 data = data.decode('utf-8').strip()
                 if data:
-                    yield data, addr[0], timestamp
+                    yield data, addr[0], timestamp, port
             except queue.Empty:
                 self.log.debug(f'No messages received for {self.timeout} seconds')
                 empty = True
 
-    def join_multiline(self, lines):
-        for line in join_multipart_stream(lines,
-                                               max_time_window=self.max_time_window,
-                                               max_message_window=self.max_message_window,
-                                               use_station_id=self.use_station_id):
-            yield line
-
     def run(self):
-        self.log.info(f'listening on {self.hostname}:{self.port}')
-
-        process = multiprocessing.Process(target=UdpServer.read_from_port, args=(self,))
-        process.daemon = True
-        process.start()
+        for port in self.ports:
+            self.log.info(f'listening on {self.hostname}:{port}')
+            process = multiprocessing.Process(target=UdpServer.read_from_port, args=(self, port))
+            process.daemon = True
+            process.start()
 
     def read_messages(self):
         yield from self.read_from_queue()

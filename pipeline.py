@@ -8,7 +8,7 @@ import time
 from server.server import UdpServer
 from server.server import GCSShardWriter
 from util.nmea import format_nmea
-from util.sources import load_source_ip_map
+from util.sources import load_source_port_map
 
 class Pipeline:
     def __init__(self, args):
@@ -30,8 +30,8 @@ class Pipeline:
 
 
     def run_server(self):
-        source_ip_map = load_source_ip_map(self.args.source_ip_map, default_source=self.args.source)
-        server = UdpServer(log=self.log, port=self.args.udp_port)
+        source_port_map = load_source_port_map(self.args.source_port_map, default_source=self.args.source)
+        server = UdpServer(log=self.log, ports=self.args.udp_port_list, bufsize=self.args.buffer_size)
         server.run()
         with GCSShardWriter(
                 gcs_dir=self.args.gcs_dir,
@@ -40,7 +40,7 @@ class Pipeline:
                 ) as writer:
             while True:
                 messages = server.read_messages()
-                lines = format_nmea(messages, source_ip_map)
+                lines = format_nmea(messages, source_port_map)
                 writer.write_lines(lines)
                 if writer.is_stale():
                     writer.close()

@@ -65,8 +65,8 @@ server_args.add_argument('--gcs-dir', type=str,
                               '(default: %(default)s)',
                          default='gs://scratch-paul-ttl100/ais-listener/')
 server_args.add_argument('--source', type=str,
-                         help='Source name to apply to all received NMEA.  If source-ip-map is specified, '
-                              'then this value will be applied to messages received from any IP that is not '
+                         help='Source name to apply to all received NMEA.  If source-port-map is specified, '
+                              'then this value will be applied to messages received by any port that is not '
                               'in the mapping file.'
                               '(default: %(default)s)',
                          default='ais-listener')

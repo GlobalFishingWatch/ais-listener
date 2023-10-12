@@ -32,7 +32,6 @@ class UdpServer(object):
             shard_interval=self.shard_interval
         )
 
-
     def read_from_port(self):
         sock = socket.socket(socket.AF_INET,        # Internet
                              socket.SOCK_DGRAM)     # UDP
@@ -72,10 +71,6 @@ class UdpServer(object):
         listen_process = multiprocessing.Process(target=UdpServer.read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()
-
-        # write_process = multiprocessing.Process(target=UdpServer.write_to_file, args=(self,))
-        # write_process.daemon = True
-        # write_process.start()
 
         return [listen_process]
 

@@ -3,13 +3,11 @@ Pipeline operational logic.  All the real work gets done here
 """
 
 import logging
-import multiprocessing.connection
 import socket
 import time
 from server.server import UdpServer
-from server.server import GCSShardWriter
-from util.nmea import format_nmea
 from util.sources import load_source_port_map
+
 
 class Pipeline:
     def __init__(self, args):
@@ -28,7 +26,6 @@ class Pipeline:
         :return: dict
         """
         return vars(self.args)
-
 
     def run_server(self):
         processes = []
@@ -53,7 +50,6 @@ class Pipeline:
                 server.write_to_file()
 
         # multiprocessing.connection.wait([p.sentinel for p in processes])
-
 
     def run_client(self):
         server_ip = self.args.server_ip

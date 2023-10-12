@@ -6,15 +6,14 @@ Listens on a UDP port and writes received NMEA messages to sharded files in GCS
 
 import argparse
 import os
-from util.argparse import valid_date
 from util.argparse import pretty_print_args
 from util.argparse import setup_logging
 from pipeline import Pipeline
-import logging
 
 PIPELINE_VERSION = '0.0.2'
 PIPELINE_NAME = 'AIS Listener'
-PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP and writes them to sharded files in GCS'
+PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP ' \
+                       'and writes them to sharded files in GCS'
 
 # Some optional git parameters provided as environment variables.  Used for logging.
 COMMIT_SHA = os.getenv('COMMIT_SHA', '')
@@ -44,8 +43,6 @@ parser.add_argument('-q', '--quiet',
 parser.add_argument('--project', type=str,
                     help='GCP project id (default: %(default)s)',
                     default='world-fishing-827')
-
-
 
 
 ### operations
@@ -93,14 +90,16 @@ client_args.add_argument('--delay', type=float,
                          help='Delay in seconds between messages (default: %(default)s)',
                          default=1)
 
+
 def expand_udp_port_range():
     min_ports = 1
     max_ports = 10
     first, last = args.udp_port_range
     port_list = list(range(first, last + 1))
     num_ports = len(port_list)
-    if  not(min_ports <= num_ports <= max_ports):
-        parser.error(f"invalid udp_port_range containing {num_ports} ports. Must contain between {min_ports} and {max_ports} ports")
+    if not(min_ports <= num_ports <= max_ports):
+        parser.error(f"invalid udp_port_range containing {num_ports} ports. "
+                     f"Must contain between {min_ports} and {max_ports} ports")
     return port_list
 
 

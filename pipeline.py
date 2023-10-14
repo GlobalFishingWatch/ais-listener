@@ -6,9 +6,8 @@ import logging
 import socket
 import time
 from server.server import UdpServer
-from server.server import GCSShardWriter
-from util.nmea import format_nmea
 from util.sources import load_source_port_map
+
 
 class Pipeline:
     def __init__(self, args):
@@ -28,22 +27,29 @@ class Pipeline:
         """
         return vars(self.args)
 
-
     def run_server(self):
-        source_port_map = load_source_port_map(self.args.source_port_map, default_source=self.args.source)
-        server = UdpServer(log=self.log, ports=self.args.udp_port_list, bufsize=self.args.buffer_size)
-        server.run()
-        with GCSShardWriter(
-                gcs_dir=self.args.gcs_dir,
-                file_suffix=self.args.source,
-                shard_interval=self.args.shard_interval
-                ) as writer:
-            while True:
-                messages = server.read_messages()
-                lines = format_nmea(messages, source_port_map)
-                writer.write_lines(lines)
-                if writer.is_stale():
-                    writer.close()
+        processes = []
+        servers = []
+        source_port_map = load_source_port_map(self.args.source_port_map)
+        for port in self.args.udp_port_list:
+
+            source = source_port_map.get(port)
+            if not source:
+                source = f'{self.args.source}-{port}'
+
+            server = UdpServer(log=self.log,
+                               gcs_dir=self.args.gcs_dir,
+                               source=source,
+                               port=port,
+                               bufsize=self.args.buffer_size,
+                               shard_interval=self.args.shard_interval)
+            processes.extend(server.run())
+            servers.append(server)
+        while True:
+            for server in servers:
+                server.write_to_file()
+
+        # multiprocessing.connection.wait([p.sentinel for p in processes])
 
     def run_client(self):
         server_ip = self.args.server_ip

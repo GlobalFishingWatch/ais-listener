@@ -4,61 +4,81 @@ import queue
 import socket
 import time
 from datetime import datetime
-from ais_tools.nmea import join_multipart_stream
 from cloudpathlib import GSPath
 import uuid
 import gzip
 
+from util.nmea import format_nmea
+
 
 class UdpServer(object):
-    def __init__(self, log, hostname="0.0.0.0", ports=(10110,), bufsize=4096, timeout=10):
+    def __init__(self, log, gcs_dir, source, hostname="0.0.0.0", port=10110, bufsize=4096, timeout=10,
+                 shard_interval=300):
         self.log = log
+        self.gcs_dir = gcs_dir
+        self.source = source
         self.hostname = hostname
-        self.ports = ports
+        self.port = port
         self.bufsize = bufsize
         self.queue = multiprocessing.Queue()
         self.max_time_window = 500
         self.max_message_window = 1000
         self.use_station_id = False
         self.timeout = timeout
+        self.shard_interval = shard_interval
+        self.writer = GCSShardWriter(
+            gcs_dir=self.gcs_dir,
+            file_prefix=self.source,
+            shard_interval=self.shard_interval
+        )
 
-
-    def read_from_port(self, port):
+    def read_from_port(self):
         sock = socket.socket(socket.AF_INET,        # Internet
                              socket.SOCK_DGRAM)     # UDP
-        sock.bind((self.hostname, port))
+        sock.bind((self.hostname, self.port))
         while True:
             data, addr = sock.recvfrom(self.bufsize)
-            message = data, addr, time.time(), port
+            message = data, addr, time.time(), self.port
             self.queue.put_nowait(message)
 
-    def read_from_queue(self):
-        empty = False
-        while not empty:
+    def read_from_queue(self, max_messages=1000):
+        messages_remaining = max_messages
+        while messages_remaining:
             try:
-                data, addr, timestamp, port = self.queue.get(timeout=self.timeout)
+                # data, addr, timestamp, port = self.queue.get(timeout=self.timeout)
+                data, addr, timestamp, port = self.queue.get_nowait()
                 data = data.decode('utf-8').strip()
                 if data:
                     yield data, addr[0], timestamp, port
+                    messages_remaining -= 1
             except queue.Empty:
-                self.log.debug(f'No messages received for {self.timeout} seconds')
-                empty = True
-
-    def run(self):
-        for port in self.ports:
-            self.log.info(f'listening on {self.hostname}:{port}')
-            process = multiprocessing.Process(target=UdpServer.read_from_port, args=(self, port))
-            process.daemon = True
-            process.start()
+                messages_remaining = 0
+                # self.log.debug(f'No messages received for {self.timeout} seconds')
+                # empty = True
 
     def read_messages(self):
         yield from self.read_from_queue()
 
+    def write_to_file(self):
+        messages = self.read_messages()
+        lines = format_nmea(messages, self.source)
+        self.writer.write_lines(lines)
+        if self.writer.is_stale():
+            self.writer.close()  # close this shard.   A new one will be opened on the next write
+
+    def run(self):
+        self.log.info(f'listening on {self.hostname}:{self.port}')
+        listen_process = multiprocessing.Process(target=UdpServer.read_from_port, args=(self,))
+        listen_process.daemon = True
+        listen_process.start()
+
+        return [listen_process]
+
 
 class GCSShardWriter(object):
-    def __init__(self, gcs_dir, file_suffix, shard_interval=600, log=None):
+    def __init__(self, gcs_dir, file_prefix, shard_interval=600, log=None):
         self.gcs_dir = gcs_dir
-        self.file_suffix = file_suffix
+        self.file_prefix = file_prefix
         self.shard_interval = shard_interval
         self.log = log or logging.getLogger('main')
 
@@ -91,7 +111,7 @@ class GCSShardWriter(object):
         tm = now.strftime('%H%M%S')
         hash = uuid.uuid4()
 
-        filename = f'{self.file_suffix}_{dt}_{tm}_{hash}.nmea.gz'
+        filename = f'{self.file_prefix}_{dt}_{tm}_{hash}.nmea.gz'
         f = GSPath(self.gcs_dir) / dt / filename
         self.log.info(f'Writing to {f.as_uri()}')
         self._file = f.open('wb')

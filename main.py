@@ -6,15 +6,14 @@ Listens on a UDP port and writes received NMEA messages to sharded files in GCS
 
 import argparse
 import os
-from util.argparse import valid_date
 from util.argparse import pretty_print_args
 from util.argparse import setup_logging
 from pipeline import Pipeline
-import logging
 
-PIPELINE_VERSION = '0.0.2'
+PIPELINE_VERSION = '0.0.3'
 PIPELINE_NAME = 'AIS Listener'
-PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP and writes them to sharded files in GCS'
+PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP ' \
+                       'and writes them to sharded files in GCS'
 
 # Some optional git parameters provided as environment variables.  Used for logging.
 COMMIT_SHA = os.getenv('COMMIT_SHA', '')
@@ -46,8 +45,6 @@ parser.add_argument('--project', type=str,
                     default='world-fishing-827')
 
 
-
-
 ### operations
 subparsers = parser.add_subparsers(dest='operation', required=True)
 server_args = subparsers.add_parser('server', help="listen to UDP")
@@ -65,8 +62,8 @@ server_args.add_argument('--gcs-dir', type=str,
                               '(default: %(default)s)',
                          default='gs://scratch-paul-ttl100/ais-listener/')
 server_args.add_argument('--source', type=str,
-                         help='Source name to apply to all received NMEA.  If source-ip-map is specified, '
-                              'then this value will be applied to messages received from any IP that is not '
+                         help='Source name to apply to all received NMEA.  If source-port-map is specified, '
+                              'then this value will be applied to messages received by any port that is not '
                               'in the mapping file.'
                               '(default: %(default)s)',
                          default='ais-listener')
@@ -93,14 +90,16 @@ client_args.add_argument('--delay', type=float,
                          help='Delay in seconds between messages (default: %(default)s)',
                          default=1)
 
+
 def expand_udp_port_range():
     min_ports = 1
     max_ports = 10
     first, last = args.udp_port_range
     port_list = list(range(first, last + 1))
     num_ports = len(port_list)
-    if  not(min_ports <= num_ports <= max_ports):
-        parser.error(f"invalid udp_port_range containing {num_ports} ports. Must contain between {min_ports} and {max_ports} ports")
+    if not(min_ports <= num_ports <= max_ports):
+        parser.error(f"invalid udp_port_range containing {num_ports} ports. "
+                     f"Must contain between {min_ports} and {max_ports} ports")
     return port_list
 
 

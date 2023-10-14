@@ -10,7 +10,7 @@ from util.argparse import pretty_print_args
 from util.argparse import setup_logging
 from pipeline import Pipeline
 
-PIPELINE_VERSION = '0.0.2'
+PIPELINE_VERSION = '0.0.3'
 PIPELINE_NAME = 'AIS Listener'
 PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP ' \
                        'and writes them to sharded files in GCS'

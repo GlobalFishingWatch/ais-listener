@@ -5,6 +5,8 @@ import socket
 import time
 from datetime import datetime
 from cloudpathlib import GSPath
+from cloudpathlib import GSClient
+from cloudpathlib.enums import FileCacheMode
 import uuid
 import gzip
 
@@ -112,7 +114,8 @@ class GCSShardWriter(object):
         hash = uuid.uuid4()
 
         filename = f'{self.file_prefix}_{dt}_{tm}_{hash}.nmea.gz'
-        f = GSPath(self.gcs_dir) / dt / filename
+        client = GSClient(file_cache_mode=FileCacheMode.close_file)
+        f = GSPath(self.gcs_dir, client=client) / dt / filename
         self.log.info(f'Writing to {f.as_uri()}')
         self._file = f.open('wb')
         self._gz_file = gzip.GzipFile(mode='w', fileobj=self._file)

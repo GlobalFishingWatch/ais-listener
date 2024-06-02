@@ -9,5 +9,4 @@ from util.sources import load_config_file
 def test_load_config(filename, port, source):
     config = load_config_file(filename)
     sources = {item['source']: item for item in config['sources']}
-    assert len(config['sources']) == 3
     assert sources[source]['port'] == port

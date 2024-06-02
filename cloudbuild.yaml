@@ -6,27 +6,23 @@ steps:
         '--build-arg=COMMIT=$COMMIT_SHA',
         '--build-arg=REPO=$REPO_NAME',
         '--build-arg=BRANCH=$BRANCH_NAME',
+        '--build-arg=TAG=$TAG_NAME',
         '-t',
-        'gcr.io/world-fishing-827/github.com/globalfishingwatch/$REPO_NAME:$COMMIT_SHA',
+        '${_BASE_IMAGE_NAME}:$COMMIT_SHA',
         '-t',
-        'gcr.io/world-fishing-827/github.com/globalfishingwatch/$REPO_NAME:$BRANCH_NAME',
+        '${_BASE_IMAGE_NAME}:$TAG_NAME',
         '-t',
-        'gcr.io/world-fishing-827/github.com/globalfishingwatch/$REPO_NAME:latest',
+        '${_BASE_IMAGE_NAME}:latest',
         '.',
       ]
- 
-  # Push production image to GCR
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      [
-        'push',
-        'gcr.io/world-fishing-827/github.com/globalfishingwatch/$REPO_NAME:$COMMIT_SHA',
-      ]
-
 
 images:
-  - 'gcr.io/world-fishing-827/github.com/globalfishingwatch/$REPO_NAME:latest'
-  - 'gcr.io/world-fishing-827/github.com/globalfishingwatch/$REPO_NAME:$COMMIT_SHA'
-  - 'gcr.io/world-fishing-827/github.com/globalfishingwatch/$REPO_NAME:$BRANCH_NAME'
+  - '${_BASE_IMAGE_NAME}:${TAG_NAME}'
+  - '${_BASE_IMAGE_NAME}:${$COMMIT_SHA}'
+  - '${_BASE_IMAGE_NAME}:latest'
 
 timeout: 900s
+substitutions:
+  _BASE_IMAGE_NAME: 'gcr.io/${PROJECT_ID}/${REPO_NAME}/${BRANCH_NAME}'
+options:
+  dynamic_substitutions: true

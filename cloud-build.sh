@@ -16,6 +16,7 @@ REPO=$(basename `git rev-parse --show-toplevel`)
 #       then this will be same as the name of the git repo, but if you are in a different local
 #       folder then you might want to replace above with the correct repo name
 
+TAG=$(git describe --tags --abbrev=0 --always)
 
 gcloud builds submit --config cloudbuild.yaml --substitutions \
-  COMMIT_SHA=${COMMIT},BRANCH_NAME=${BRANCH},REPO_NAME=${REPO}
+  COMMIT_SHA=${COMMIT},BRANCH_NAME=${BRANCH},REPO_NAME=${REPO},TAG_NAME=${TAG}

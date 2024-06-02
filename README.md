@@ -1,45 +1,55 @@
 # AIS Listener
 
-A UDP listener that receives NMEA-encoded AIS messages via UDP and writes them to GCS
+A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them to GCS
 
 ## Introduction
 
-This is a dockerized micro service that provides a UDP server which will listen on a range of UDP ports for NMEA
-data streams.  A tagblock is added or updated to include a timestamp, source and station, and the resulting 
+This is a dockerized micro service that provides UDP and TCP services.  The UDP service will listen on multiple ports 
+for NMEA messages data streams. THe TCP service will connect to a designated host and then read messages.
+A tagblock is added or updated to include a timestamp, source and station, and the resulting 
 messages are written in the order received to a sharded and gzipped GCS file
 
-To run the server and listen on localhost to udp ports 10110, 10111, 10112
+To run the server create a config file based on `sample/sources.yaml`
 
 ```console
-python main.py -v server \
-   --udp-port-range 10110 10112 \
+python main.py -v receiver \
    --gcs-dir gs://my_bucket/some_dir/ \
-   --source-port-map gs://my_bucket/source-port-map.yaml
+   --config_file gs://my_bucket/source-port-map.yaml
 ```
 
-The server will listen to all the UDP ports in the range.  To listen on just one port, use the same value for 
-start and end.
+The service will receive files for each source in sources.  For UDP, the service will listen on the designated
+port, and for TCP the service will commecnt to the designated host and port
 
-Output files will be written in the given GCS directory in a sub directory by date.  Files are sharded every 5 minutes by default, and the 
-file name is formatted
+Output files are written in the given GCS directory in a sub directory by date.  Files are sharded every 
+5 minutes by default, and the file name is formatted
 
 `[GCS_DIR/[YYYYMMDD]/][source]_[YYYYMMDD]_[HHMMSS]_[uuid].nmea.gz`
 
-The source is the source label from `source-port-map` that is mapped to the UDP port that receives the message 
+The source is the source label from `sources.yaml`  
 
-An example source-port-map file is in sample/sources.yaml
+There is also a pari of transmitters  that can be used for testing.  
 
-There is also a client that can be used for testing.  All it does is read messages from a file and send them to a 
-designated UDP port.
-
-Running this in the project folder will read values from `sample/nmea.txt` and send to `localhost:10110`
+To send test messages via UDP use
 
 ```console
-python main.py -v client
+python main.py -v transmistter \
+  --protocol=UDP \
+  --port=[PORT_TO_LISTEN] 
 ```
 
-You can run the server and the client locally and the client should send messages to the server.   Use `-v` for 
-verbose output and both client and server should print every message to the console.
+To send messages via TCP, use
+
+```console
+python main.py -v transmitter\
+  --protocol=TCP\
+  --port [PORT_TO_CONNECT]
+```
+
+Running this in the project folder will read values from `sample/nmea.txt` 
+
+
+You can run the receiver and the transmitter locally and the transmitter should send messages to the reeciver.   
+Use `-v` for verbose output and both transmitter and receiver should print every message to the console.
 
 ## Developing 
 To set up the development environment

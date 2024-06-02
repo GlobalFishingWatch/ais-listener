@@ -10,9 +10,9 @@ from util.argparse import pretty_print_args
 from util.argparse import setup_logging
 from pipeline import Pipeline
 
-PIPELINE_VERSION = '0.0.4'
+PIPELINE_VERSION = '0.1.0'
 PIPELINE_NAME = 'AIS Listener'
-PIPELINE_DESCRIPTION = 'A UDP listener that receives NMEA-encoded AIS messages via UDP ' \
+PIPELINE_DESCRIPTION = 'A TCP/UDP service that receives NMEA-encoded AIS messages via UDP or TCP ' \
                        'and writes them to sharded files in GCS'
 
 # Some optional git parameters provided as environment variables.  Used for logging.
@@ -47,66 +47,69 @@ parser.add_argument('--project', type=str,
 
 ### operations
 subparsers = parser.add_subparsers(dest='operation', required=True)
-server_args = subparsers.add_parser('server', help="listen to UDP")
-client_args = subparsers.add_parser('client', help="Send lines from a file over UDP")
+receiver_args = subparsers.add_parser('receiver', help="receive nmea lines from a TCP ot UDP transmitter")
+transmitter_args = subparsers.add_parser('transmitter', help="Send lines from a file")
 
-server_args.add_argument('--udp-port-range', type=int, nargs=2,
-                         help='UDP port range to listen (default: %(default)s)',
-                         default=[10110, 10110])
-server_args.add_argument('--buffer-size', type=int,
+# receiver_args.add_argument('--udp-port-range', type=int, nargs=2,
+#                          help='UDP port range to listen (default: %(default)s)',
+#                          default=[10110, 10110])
+receiver_args.add_argument('--buffer-size', type=int,
                          help='size in bytes for the internal buffer'
                               '(default: %(default)s)',
                          default=4096)
-server_args.add_argument('--gcs-dir', type=str,
+receiver_args.add_argument('--gcs-dir', type=str,
                          help='GCS directory to write nmea shard files'
                               '(default: %(default)s)',
                          default='gs://scratch-paul-ttl100/ais-listener/')
-server_args.add_argument('--source', type=str,
-                         help='Source name to apply to all received NMEA.  If source-port-map is specified, '
-                              'then this value will be applied to messages received by any port that is not '
-                              'in the mapping file.'
-                              '(default: %(default)s)',
-                         default='ais-listener')
-server_args.add_argument('--source-port-map', type=str,
+# receiver_args.add_argument('--default_source', type=str,
+#                          help='Source name to apply to all received NMEA.  If source-map is specified, '
+#                               'then this value will be applied to messages received by any UDP port that is not '
+#                               'in the mapping file.'
+#                               '(default: %(default)s)',
+#                          default='ais-listener')
+receiver_args.add_argument('--config_file', type=str,
                          help='File to read to get mapping of listening ports to source names'
                               '(default: %(default)s)',
                          default='sample/sources.yaml')
-server_args.add_argument('--shard-interval', type=int,
+receiver_args.add_argument('--shard-interval', type=int,
                          help='Maximum interval in seconds between the first line and last line written to a '
                               'single shard file'
                               '(default: %(default)s)',
                          default=300)
 
-client_args.add_argument('--server-ip', type=str,
-                         help='IP address of server to send to (default: %(default)s)',
+transmitter_args.add_argument('--protocol', type=str,
+                         help='UDP or TCP (default: %(default)s)',
+                         default="UDP")
+transmitter_args.add_argument('--receiver-ip', type=str,
+                         help='For UDP, the IP address of receiver to send to (default: %(default)s)',
                          default="localhost")
-client_args.add_argument('--udp-port', type=int,
-                         help='UDP port to send to (default: %(default)s)',
+transmitter_args.add_argument('--port', type=int,
+                         help='UDP/TCP port (default: %(default)s)',
                          default=10110)
-client_args.add_argument('--filename', type=str,
-                         help='name of file to read from (default: %(default)s)',
+transmitter_args.add_argument('--filename', type=str,
+                         help='Name of file to read from (default: %(default)s)',
                          default="sample/nmea.txt")
-client_args.add_argument('--delay', type=float,
+transmitter_args.add_argument('--delay', type=float,
                          help='Delay in seconds between messages (default: %(default)s)',
                          default=1)
 
 
-def expand_udp_port_range():
-    min_ports = 1
-    max_ports = 10
-    first, last = args.udp_port_range
-    port_list = list(range(first, last + 1))
-    num_ports = len(port_list)
-    if not(min_ports <= num_ports <= max_ports):
-        parser.error(f"invalid udp_port_range containing {num_ports} ports. "
-                     f"Must contain between {min_ports} and {max_ports} ports")
-    return port_list
+# def expand_udp_port_range():
+#     min_ports = 1
+#     max_ports = 10
+#     first, last = args.udp_port_range
+#     port_list = list(range(first, last + 1))
+#     num_ports = len(port_list)
+#     if not(min_ports <= num_ports <= max_ports):
+#         parser.error(f"invalid udp_port_range containing {num_ports} ports. "
+#                      f"Must contain between {min_ports} and {max_ports} ports")
+#     return port_list
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
     log = setup_logging(args.verbosity)
-    args.udp_port_list = expand_udp_port_range() if args.operation == 'server' else []
+    # args.udp_port_list = expand_udp_port_range() if args.operation == 'receiver' else []
 
     args.COMMIT_SHA = COMMIT_SHA
     args.COMMIT_BRANCH = COMMIT_BRANCH

@@ -1,7 +1,7 @@
 """
 AIS Listener
 
-Listens on a UDP port and writes received NMEA messages to sharded files in GCS
+Receives NMEA messages via TCP and UDP\and writes received NMEA messages to sharded files in GCS
 """
 
 import argparse
@@ -19,6 +19,7 @@ PIPELINE_DESCRIPTION = 'A TCP/UDP service that receives NMEA-encoded AIS message
 COMMIT_SHA = os.getenv('COMMIT_SHA', '')
 COMMIT_BRANCH = os.getenv('COMMIT_BRANCH', '')
 COMMIT_REPO = os.getenv('COMMIT_REPO', '')
+COMMIT_TAG = os.getenv('COMMIT_TAG', '')
 
 
 parser = argparse.ArgumentParser(description=f'{PIPELINE_NAME} {PIPELINE_VERSION} - {PIPELINE_DESCRIPTION}')
@@ -50,9 +51,6 @@ subparsers = parser.add_subparsers(dest='operation', required=True)
 receiver_args = subparsers.add_parser('receiver', help="receive nmea lines from a TCP ot UDP transmitter")
 transmitter_args = subparsers.add_parser('transmitter', help="Send lines from a file")
 
-# receiver_args.add_argument('--udp-port-range', type=int, nargs=2,
-#                          help='UDP port range to listen (default: %(default)s)',
-#                          default=[10110, 10110])
 receiver_args.add_argument('--buffer-size', type=int,
                          help='size in bytes for the internal buffer'
                               '(default: %(default)s)',
@@ -61,12 +59,6 @@ receiver_args.add_argument('--gcs-dir', type=str,
                          help='GCS directory to write nmea shard files'
                               '(default: %(default)s)',
                          default='gs://scratch-paul-ttl100/ais-listener/')
-# receiver_args.add_argument('--default_source', type=str,
-#                          help='Source name to apply to all received NMEA.  If source-map is specified, '
-#                               'then this value will be applied to messages received by any UDP port that is not '
-#                               'in the mapping file.'
-#                               '(default: %(default)s)',
-#                          default='ais-listener')
 receiver_args.add_argument('--config_file', type=str,
                          help='File to read to get mapping of listening ports to source names'
                               '(default: %(default)s)',
@@ -94,18 +86,6 @@ transmitter_args.add_argument('--delay', type=float,
                          default=1)
 
 
-# def expand_udp_port_range():
-#     min_ports = 1
-#     max_ports = 10
-#     first, last = args.udp_port_range
-#     port_list = list(range(first, last + 1))
-#     num_ports = len(port_list)
-#     if not(min_ports <= num_ports <= max_ports):
-#         parser.error(f"invalid udp_port_range containing {num_ports} ports. "
-#                      f"Must contain between {min_ports} and {max_ports} ports")
-#     return port_list
-
-
 if __name__ == '__main__':
     args = parser.parse_args()
     log = setup_logging(args.verbosity)
@@ -114,6 +94,7 @@ if __name__ == '__main__':
     args.COMMIT_SHA = COMMIT_SHA
     args.COMMIT_BRANCH = COMMIT_BRANCH
     args.COMMIT_REPO = COMMIT_REPO
+    args.COMMIT_TAG = COMMIT_TAG
 
     log.info(f'{PIPELINE_NAME} v{PIPELINE_VERSION}')
     log.info(f'{PIPELINE_DESCRIPTION}')

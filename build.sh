@@ -16,6 +16,7 @@ REPO=$(basename `git rev-parse --show-toplevel`)
 #       then this will be same as the name of the git repo, but if you are in a different local
 #       folder then you might want to replace above with the correct repo name
 
+TAG=$(git describe --tags --abbrev=0 --always)
 
 # build the docker image, passing in the 3 git parameters
 # This will be available inside the container as environment variables:
@@ -26,5 +27,6 @@ REPO=$(basename `git rev-parse --show-toplevel`)
 docker compose build \
   --build-arg COMMIT=${COMMIT} \
   --build-arg BRANCH=${BRANCH} \
-  --build-arg REPO=${REPO}
+  --build-arg REPO=${REPO} \
+  --build-arg TAG=${TAG}
 

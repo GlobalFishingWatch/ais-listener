@@ -1,7 +1,7 @@
 version: '3.9'
 services:
   server:
-    entrypoint:  [ "python", "-u", "main.py", "-vv", "server" ]
+    entrypoint:  [ "python", "-u", "main.py", "-vv", "receiver" ]
     ports:
       - "10110:10110/udp"
     build:
@@ -19,7 +19,7 @@ services:
       - "gcp:/root/.config/"
 
   bash:
-    entrypoint: /bin/bash
+    entrypoint: /bin/sh
     build:
       context: .
     volumes:

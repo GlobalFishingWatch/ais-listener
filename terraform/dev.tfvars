@@ -1,0 +1,7 @@
+basename="ais-listener"
+gfw_project_name="ais-listener"
+environment="dev"
+blame="paul"
+resource_creator="paul"
+project="world-fishing-827"
+region="us-east1"

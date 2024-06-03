@@ -18,11 +18,11 @@ steps:
 
 images:
   - '${_BASE_IMAGE_NAME}:${TAG_NAME}'
-  - '${_BASE_IMAGE_NAME}:${$COMMIT_SHA}'
+  - '${_BASE_IMAGE_NAME}:${COMMIT_SHA}'
   - '${_BASE_IMAGE_NAME}:latest'
 
 timeout: 900s
 substitutions:
-  _BASE_IMAGE_NAME: 'gcr.io/${PROJECT_ID}/${REPO_NAME}/${BRANCH_NAME}'
+  _BASE_IMAGE_NAME: 'gcr.io/${PROJECT_ID}/github.com/globalfishingwatch/${REPO_NAME}/${BRANCH_NAME}'
 options:
   dynamic_substitutions: true

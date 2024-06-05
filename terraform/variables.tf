@@ -20,7 +20,7 @@ variable "resource_creator" {
 
 variable "project" {
   type    = string
-  default = "world-fishing-827"
+  default = "skytruth-pelagos-production"
 }
 
 variable "region" {
@@ -28,18 +28,23 @@ variable "region" {
   default = "us-east1"
 }
 
-variable "gcs_temp_location" {
+variable "zone" {
   type    = string
-  default = "gs://pipe_nmea_temp_ttl3/"
+  default = "us-central1-f"
 }
+
+# variable "gcs_temp_location" {
+#   type    = string
+#   default = "gs://pipe_nmea_temp_ttl3/"
+# }
 
 variable "gfw_project_name" {
   type = string
   default = "pipe-hourly-prototype"
 }
 
-data "google_project" "project" {
-}
-
-data "google_storage_project_service_account" "gcs_account" {
-}
+# data "google_project" "project" {
+# }
+#
+# data "google_storage_project_service_account" "gcs_account" {
+# }

@@ -34,6 +34,7 @@ def test_format_nmea(source, message, addr, timestamp, port, expected):
 
 @pytest.mark.parametrize("source,message,addr,timestamp,port,expected", [
     ('source', '', '127.0.0.1', 123, 0, []),
+    ('source', ' ', '127.0.0.1', 123, 0, []),
     ('source', 'message1\n', '127.0.0.1', 123, 0, ['\\t:source,s:127.0.0.1,c:123*58\\message1']),
     ('source', 'message1\nmessage2', '127.0.0.1', 123, 0,
      ['\\t:source,s:127.0.0.1,c:123*58\\message1', '\\t:source,s:127.0.0.1,c:123*58\\message2']

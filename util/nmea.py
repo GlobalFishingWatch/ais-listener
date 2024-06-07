@@ -24,7 +24,8 @@ def update_tagblock(nmea, source, timestamp, ip_address):
 
 def format_nmea(messages, source):
     for message, addr, timestamp, port in messages:
-        lines = [line for line in message.split('\n') if line]
+        lines = (line.strip() for line in message.split('\n'))
+        lines = (line for line in lines if line)
         for line in lines:
             try:
                 line = update_tagblock(line, source, timestamp, addr)

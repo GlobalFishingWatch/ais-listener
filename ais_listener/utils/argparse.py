@@ -36,19 +36,17 @@ def valid_date(s):
 
 
 def pretty_print_args(args):
-    arg_str = '\n'.join(f'  {k}={v}' for k, v in vars(args).items())
-    return f'Executing with parameters:\n{arg_str}'
+    arg_str = "\n".join(f"  {k}={v}" for k, v in vars(args).items())
+    return f"Executing with parameters:\n{arg_str}"
 
 
 def setup_logging(verbosity):
-    base_loglevel = getattr(logging,
-                            (os.getenv('LOGLEVEL', 'WARNING')).upper())
+    base_loglevel = getattr(logging, (os.getenv("LOGLEVEL", "WARNING")).upper())
     verbosity = min(verbosity, 2)
     loglevel = base_loglevel - (verbosity * 10)
 
-
     # create logger
-    log = logging.getLogger('main')
+    log = logging.getLogger("main")
     log.propagate = False
     log.setLevel(loglevel)
 
@@ -57,7 +55,7 @@ def setup_logging(verbosity):
     ch.setLevel(loglevel)
 
     # create formatter
-    formatter = logging.Formatter('%(message)s')
+    formatter = logging.Formatter("%(message)s")
 
     # add formatter to ch
     ch.setFormatter(formatter)

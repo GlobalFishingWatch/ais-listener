@@ -5,9 +5,9 @@ Pipeline operational logic.  All the real work gets done here
 import logging
 import socket
 import time
-from receiver.stream import TcpStream, UdpStream
+from ais_listener.stream import TcpStream, UdpStream
 
-from util.sources import load_config_file
+from ais_listener.utils.sources import load_config_file
 
 
 class Pipeline:

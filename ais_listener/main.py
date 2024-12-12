@@ -6,9 +6,10 @@ Receives NMEA messages via TCP and UDP\and writes received NMEA messages to shar
 
 import argparse
 import os
-from util.argparse import pretty_print_args
-from util.argparse import setup_logging
-from pipeline import Pipeline
+
+from ais_listener.utils.argparse import pretty_print_args
+from ais_listener.utils.argparse import setup_logging
+from ais_listener.pipeline import Pipeline
 
 PIPELINE_VERSION = '0.1.0'
 PIPELINE_NAME = 'AIS Listener'
@@ -86,7 +87,7 @@ transmitter_args.add_argument('--delay', type=float,
                          default=1)
 
 
-if __name__ == '__main__':
+def main():
     args = parser.parse_args()
     log = setup_logging(args.verbosity)
     # args.udp_port_list = expand_udp_port_range() if args.operation == 'receiver' else []
@@ -111,3 +112,7 @@ if __name__ == '__main__':
     # exit code=0 indicates success.  Any other value indicates a failure
     exit_code = 0 if result else 1
     exit(exit_code)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,5 +1,5 @@
 import pytest
-from util.sources import load_config_file
+from ais_listener.utils.sources import load_config_file
 
 
 @pytest.mark.parametrize("filename,port,source", [

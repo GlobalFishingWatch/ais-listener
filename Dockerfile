@@ -1,29 +1,43 @@
-FROM gcr.io/world-fishing-827/github.com/globalfishingwatch/gfw-pipeline:latest-python3.11-alpine
-LABEL maintainer="paul@globalfishingwatch.org"
-
-ARG COMMIT="unknown"
-ARG REPO="unknown"
-ARG BRANCH="unknown"
-ARG TAG="unknown"
-
-LABEL commit_sha=${COMMIT}
-LABEL commit_branch=${BRANCH}
-LABEL commit_repo=${REPO}
-LABEL commit_tag=${TAG}
-
-ENV COMMIT_SHA=${COMMIT}
-ENV COMMIT_BRANCH=${BRANCH}
-ENV COMMIT_REPO=${REPO}
-ENV COMMIT_TAG=${TAG}
-
-WORKDIR /opt/code
+FROM python:3.12-alpine AS base
 
 RUN apk update && apk add build-base
 
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
-COPY . .
+# Configure the working directory
+RUN mkdir -p /opt/project
+WORKDIR /opt/project
+
+# Setup a volume for configuration and auth data
+VOLUME ["/root/.config"]
+
+# Install application dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 10110/udp
 
-ENTRYPOINT [ "python", "-u", "main.py"]
+ENTRYPOINT [ "gfw-ais-listener"]
+
+# ---------------------------------------------------------------------------------------
+# PROD
+# ---------------------------------------------------------------------------------------
+FROM base AS prod
+
+# Install app package
+COPY . /opt/project
+RUN pip install .
+
+# ---------------------------------------------------------------------------------------
+# DEV
+# ---------------------------------------------------------------------------------------
+FROM base AS dev
+
+COPY ./requirements/dev.txt .
+COPY ./requirements/test.txt .
+
+RUN pip install --no-cache-dir -r dev.txt
+RUN pip install --no-cache-dir -r test.txt
+
+# Install app package
+COPY . /opt/project
+RUN pip install -e .
+

@@ -1,4 +1,3 @@
-version: '3.9'
 services:
   server:
     entrypoint:  [ "python", "-u", "main.py", "-vv", "receiver" ]
@@ -6,8 +5,9 @@ services:
       - "10110:10110/udp"
     build:
       context: .
+      target: dev
     volumes:
-      - ".:/opt/code"
+      - ".:/opt/project"
       - "gcp:/root/.config/"
 
   gcloud:
@@ -15,15 +15,15 @@ services:
     build:
       context: .
     volumes:
-      - ".:/opt/code"
+      - ".:/opt/project"
       - "gcp:/root/.config/"
 
-  bash:
+  dev:
     entrypoint: /bin/sh
     build:
       context: .
     volumes:
-      - ".:/opt/code"
+      - ".:/opt/project"
       - "gcp:/root/.config/"
 
 volumes:

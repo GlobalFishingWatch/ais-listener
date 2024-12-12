@@ -3,8 +3,8 @@ import queue
 import socket
 import time
 
-from receiver.writer import GCSShardWriter
-from util.nmea import format_nmea
+from ais_listener.writer import GCSShardWriter
+from ais_listener.utils.nmea import format_nmea
 
 
 class MessageStream(object):

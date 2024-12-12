@@ -1,5 +1,5 @@
 import pytest
-from util.nmea import format_nmea
+from ais_listener.utils.nmea import format_nmea
 
 source_port_map = {
     0: 'ais-listener',

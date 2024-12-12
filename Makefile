@@ -37,8 +37,7 @@ build:
 dockershell:
 	docker compose run --rm -it ${DOCKER_DEV_SERVICE}
 
-reqs:testdocker
-testdocker
+reqs:
 	docker compose run --rm ${DOCKER_DEV_SERVICE} -c \
 		'pip-compile -o ${REQS_PROD} -v'
 

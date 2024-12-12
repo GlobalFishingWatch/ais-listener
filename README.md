@@ -1,6 +1,21 @@
-# AIS Listener
+<h1 align="center" style="border-bottom: none;"> AIS Listener </h1>
 
-A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them to GCS
+<p align="center">
+  <a href="https://codecov.io/gh/GlobalFishingWatch/ais-listener" > 
+    <img src="https://codecov.io/gh/GlobalFishingWatch/ais-listener/graph/badge.svg?token=VrsRdRuei9"/> 
+  </a>
+  <a>
+    <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue">
+  </a>
+  <a>
+    <img alt="Docker Engine version" src="https://img.shields.io/badge/DockerEngine-v27-yellow">
+  </a>
+  <a>
+    <img alt="Last release" src="https://img.shields.io/github/v/release/GlobalFishingWatch/ais-listener">
+  </a>
+</p>
+
+A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them to GCS.
 
 ## Introduction
 

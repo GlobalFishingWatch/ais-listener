@@ -1,6 +1,6 @@
 services:
   server:
-    entrypoint:  [ "python", "-u", "main.py", "-vv", "receiver" ]
+    entrypoint:  [ "gfw-ais-listener", "-vv", "receiver" ]
     ports:
       - "10110:10110/udp"
     build:

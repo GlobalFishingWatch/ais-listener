@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 packages = ["ais_listener"]
 
 [project]
-name = "gfw-ais-listener"
+name = "ais-listener"
 version = "0.1.0"
 description = "A TCP/UDP service that receives NMEA-encoded AIS messages and writes them to sharded files in GCS'."
 readme = "README.md"
@@ -31,11 +31,13 @@ requires-python = ">= 3.9"
 dependencies = [
     "ais-tools @ https://codeload.github.com/globalfishingwatch/ais-tools/tar.gz/v0.1.7.dev3",
     "cloudpathlib[gs]~=0.20",
-    "pyyaml~=6.0"
+    "pyyaml~=6.0",
+    "rich~=13.9",
+    "rich-argparse~=1.6",
 ]
 
 [project.scripts]
-gfw-ais-listener = "ais_listener.main:main"
+ais-listener = "ais_listener.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/GlobalFishingWatch/ais-listener"

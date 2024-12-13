@@ -5,7 +5,7 @@
 #    pip-compile --output-file=requirements.txt
 #
 ais-tools @ https://codeload.github.com/globalfishingwatch/ais-tools/tar.gz/v0.1.7.dev3
-    # via gfw-ais-listener (pyproject.toml)
+    # via ais-listener (pyproject.toml)
 bitarray==3.0.0
     # via ais-tools
 cachetools==5.5.0
@@ -19,7 +19,7 @@ charset-normalizer==3.4.0
 click==8.1.7
     # via ais-tools
 cloudpathlib[gs]==0.20.0
-    # via gfw-ais-listener (pyproject.toml)
+    # via ais-listener (pyproject.toml)
 google-api-core==2.24.0
     # via
     #   google-cloud-core
@@ -47,6 +47,10 @@ idna==3.10
     # via requests
 libais==0.17
     # via ais-tools
+markdown-it-py==3.0.0
+    # via rich
+mdurl==0.1.2
+    # via markdown-it-py
 proto-plus==1.25.0
     # via google-api-core
 protobuf==5.29.1
@@ -60,13 +64,21 @@ pyasn1==0.6.1
     #   rsa
 pyasn1-modules==0.4.1
     # via google-auth
+pygments==2.18.0
+    # via rich
 pyyaml==6.0.2
-    # via gfw-ais-listener (pyproject.toml)
+    # via ais-listener (pyproject.toml)
 requests==2.32.3
     # via
     #   ais-tools
     #   google-api-core
     #   google-cloud-storage
+rich==13.9.4
+    # via
+    #   ais-listener (pyproject.toml)
+    #   rich-argparse
+rich-argparse==1.6.0
+    # via ais-listener (pyproject.toml)
 rsa==4.9
     # via google-auth
 six==1.17.0

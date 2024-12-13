@@ -1,22 +1,19 @@
 """Pipeline operational logic. All the real work gets done here."""
 
-import logging
-import socket
 import time
-from ais_listener.stream import TcpStream, UdpStream
+import socket
+import logging
 
+from ais_listener.stream import TcpStream, UdpStream
 from ais_listener.utils.sources import load_config_file
+
+
+logger = logging.getLogger(__name__)
 
 
 class Pipeline:
     def __init__(self, args):
-        self.log = logging.getLogger("main")
-        self.dry_run = args.test
         self.args = args
-
-    @property
-    def is_test_mode(self):
-        return self.args.test
 
     @property
     def params(self):
@@ -33,7 +30,7 @@ class Pipeline:
         for source in config["sources"]:
             if source["protocol"] == "UDP":
                 receiver = UdpStream(
-                    log=self.log,
+                    log=logger,
                     gcs_dir=self.args.gcs_dir,
                     source=source["source"],
                     port=source["port"],
@@ -44,7 +41,7 @@ class Pipeline:
                 receivers.append(receiver)
             elif source["protocol"] == "TCP":
                 receiver = TcpStream(
-                    log=self.log,
+                    log=logger,
                     gcs_dir=self.args.gcs_dir,
                     source=source["source"],
                     hostname=source["host"],

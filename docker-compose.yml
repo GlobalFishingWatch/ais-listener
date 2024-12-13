@@ -1,6 +1,6 @@
 services:
   server:
-    entrypoint:  [ "gfw-ais-listener", "-vv", "receiver" ]
+    entrypoint:  [ "ais-listener", "-v", "receiver" ]
     ports:
       - "10110:10110/udp"
     build:

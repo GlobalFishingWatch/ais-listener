@@ -63,7 +63,7 @@ class Pipeline:
         #     if not source:
         #         source = f'{self.args.source}-{port}'
         #
-        #     server = UdpServer(log=self.log,
+        #     server = UdpServer(log=logger,
         #                        gcs_dir=self.args.gcs_dir,
         #                        source=source,
         #                        port=port,
@@ -83,8 +83,8 @@ class Pipeline:
         filename = self.args.filename
         delay = self.args.delay
 
-        self.log.info(f"reading messages from {filename}")
-        self.log.info(f"Sending UDP messages to {server_ip}:{port} every {delay} seconds")
+        logger.info(f"reading messages from {filename}")
+        logger.info(f"Sending UDP messages to {server_ip}:{port} every {delay} seconds")
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
 
@@ -92,7 +92,7 @@ class Pipeline:
             for line in f:
                 nmea = line.strip()
                 sock.sendto(nmea.encode("utf-8"), (server_ip, port))
-                self.log.info(nmea)
+                logger.info(nmea)
                 if delay:
                     time.sleep(delay)
 
@@ -103,11 +103,11 @@ class Pipeline:
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind(("127.0.0.1", self.args.port))
             sock.listen(1)
-            self.log.info("Waiting for receiver to connect...")
+            logger.info("Waiting for receiver to connect...")
             connection, addr = sock.accept()
             connection.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             # print(connection.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE))
-            self.log.info("...connected.")
+            logger.info("...connected.")
             sock.close()
 
             # 2. communication routine
@@ -117,13 +117,13 @@ class Pipeline:
                         for line in f:
                             nmea = line.strip()
                             connection.send(nmea.encode("utf-8") + b"\n")
-                            self.log.info(nmea)
+                            logger.info(nmea)
                             if self.args.delay:
                                 time.sleep(self.args.delay)
                             # sentence = connectionSocket.recv(1024).decode()
 
                 except (ConnectionResetError, BrokenPipeError) as e:
-                    self.log.info(f"Client connection closed: {e}")
+                    logger.info(f"Client connection closed: {e}")
                     break
 
             # 3. proper closure

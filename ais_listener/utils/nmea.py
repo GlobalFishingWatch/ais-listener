@@ -33,4 +33,3 @@ def format_nmea(messages, source):
                 pass  # If we are unable to decode an existing tagblock, then just pass through the
                 # original message unmodified
             yield line
-

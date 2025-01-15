@@ -3,13 +3,23 @@ import queue
 import socket
 import time
 
-from receiver.writer import GCSShardWriter
-from util.nmea import format_nmea
+from ais_listener.writer import GCSShardWriter
+from ais_listener.utils.nmea import format_nmea
 
 
 class MessageStream(object):
-    def __init__(self, log, gcs_dir, source, hostname="0.0.0.0", port=10110, bufsize=4096, timeout=10,
-                 shard_interval=300, connect_string=None):
+    def __init__(
+        self,
+        log,
+        gcs_dir,
+        source,
+        hostname="0.0.0.0",
+        port=10110,
+        bufsize=4096,
+        timeout=10,
+        shard_interval=300,
+        connect_string=None,
+    ):
         self.log = log
         self.gcs_dir = gcs_dir
         self.source = source
@@ -24,14 +34,11 @@ class MessageStream(object):
         self.shard_interval = shard_interval
         self.connect_string = connect_string
         self.writer = GCSShardWriter(
-            gcs_dir=self.gcs_dir,
-            file_prefix=self.source,
-            shard_interval=self.shard_interval
+            gcs_dir=self.gcs_dir, file_prefix=self.source, shard_interval=self.shard_interval
         )
 
     def read_from_port(self):
-        sock = socket.socket(socket.AF_INET,        # Internet
-                             socket.SOCK_DGRAM)     # UDP
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
         sock.bind((self.hostname, self.port))
         while True:
             data, addr = sock.recvfrom(self.bufsize)
@@ -44,7 +51,7 @@ class MessageStream(object):
             try:
                 # data, addr, timestamp, port = self.queue.get(timeout=self.timeout)
                 data, addr, timestamp, port = self.queue.get_nowait()
-                data = data.decode('utf-8').strip()
+                data = data.decode("utf-8").strip()
                 if data:
                     yield data, addr, timestamp, port
                     messages_remaining -= 1
@@ -64,7 +71,7 @@ class MessageStream(object):
             self.writer.close()  # close this shard.   A new one will be opened on the next write
 
     def run(self):
-        self.log.info(f'listening on {self.hostname}:{self.port}')
+        self.log.info(f"listening on {self.hostname}:{self.port}")
         listen_process = multiprocessing.Process(target=UdpStream.read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()
@@ -73,7 +80,6 @@ class MessageStream(object):
 
 
 class TcpStream(MessageStream):
-
     def read_from_port(self):
         initial_retry_delay = 1
         max_retry_delay = 60
@@ -87,7 +93,9 @@ class TcpStream(MessageStream):
                 sock.connect((self.hostname, self.port))
                 # print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE))
             except ConnectionRefusedError:
-                self.log.error(f"Server {self.hostname}:{self.port} refused TCP connection. retrying")
+                self.log.error(
+                    f"Server {self.hostname}:{self.port} refused TCP connection. retrying"
+                )
                 time.sleep(retry_delay)
                 retry_delay = min(retry_delay * 2, max_retry_delay)
                 continue
@@ -112,10 +120,8 @@ class TcpStream(MessageStream):
             # sock.shutdown(socket.SHUT_RDWR)
             sock.close()
 
-
-
     def run(self):
-        self.log.info(f'Connecting via TCP {self.hostname}:{self.port}')
+        self.log.info(f"Connecting via TCP {self.hostname}:{self.port}")
         listen_process = multiprocessing.Process(target=TcpStream.read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()
@@ -125,8 +131,7 @@ class TcpStream(MessageStream):
 
 class UdpStream(MessageStream):
     def read_from_port(self):
-        sock = socket.socket(socket.AF_INET,        # Internet
-                             socket.SOCK_DGRAM)     # UDP
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
         sock.bind((self.hostname, self.port))
         while True:
             data, addr = sock.recvfrom(self.bufsize)
@@ -134,7 +139,7 @@ class UdpStream(MessageStream):
             self.queue.put_nowait(message)
 
     def run(self):
-        self.log.info(f'Listening on UDP {self.hostname}:{self.port}')
+        self.log.info(f"Listening on UDP {self.hostname}:{self.port}")
         listen_process = multiprocessing.Process(target=UdpStream.read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()

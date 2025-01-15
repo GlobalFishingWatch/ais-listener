@@ -1,29 +1,27 @@
-version: '3.9'
 services:
   server:
-    entrypoint:  [ "python", "-u", "main.py", "-vv", "receiver" ]
+    build:
+      context: .
+      target: dev
     ports:
       - "10110:10110/udp"
-    build:
-      context: .
     volumes:
-      - ".:/opt/code"
+      - ".:/opt/project"
       - "gcp:/root/.config/"
+    entrypoint:  [ "ais-listener", "--no-rich-logging", "receiver" ]
 
   gcloud:
+    image: google/cloud-sdk:latest
     entrypoint: gcloud
-    build:
-      context: .
     volumes:
-      - ".:/opt/code"
       - "gcp:/root/.config/"
 
-  bash:
+  dev:
     entrypoint: /bin/sh
     build:
       context: .
     volumes:
-      - ".:/opt/code"
+      - ".:/opt/project"
       - "gcp:/root/.config/"
 
 volumes:

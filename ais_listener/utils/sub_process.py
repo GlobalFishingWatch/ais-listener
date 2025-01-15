@@ -11,13 +11,15 @@ def capture_subprocess_output(subprocess_args):
     # Start subprocess
     # bufsize = 1 means output is line buffered
     # universal_newlines = True is required for line buffering
-    process = subprocess.Popen(subprocess_args,
-                               bufsize=1,
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.STDOUT,
-                               universal_newlines=True,
-                               shell=False,
-                               errors='replace')
+    process = subprocess.Popen(
+        subprocess_args,
+        bufsize=1,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        universal_newlines=True,
+        shell=False,
+        errors="replace",
+    )
 
     # Create callback function for process output
     buf = io.StringIO()
@@ -55,15 +57,16 @@ def capture_subprocess_output(subprocess_args):
 def execute_command(cmd, dry_run=False, success_code=0):
     """
     Execute a single shell command.  pass dry_run=True to print the command instead of running it
-    Will raise a runtime error if the command returns an exit code that is different from success_code
+    Will raise a runtime error if the command returns an exit code that is different
+        from success_code.
     """
     if dry_run:
-        logging.info('DRY_RUN: {}'.format(cmd))
+        logging.info("DRY_RUN: {}".format(cmd))
         return 0
     else:
         exit_code = os.system(cmd)
         if exit_code != success_code:
-            raise(RuntimeError("command '{}' failed with exit code {}".format(cmd, exit_code)))
+            raise RuntimeError("command '{}' failed with exit code {}".format(cmd, exit_code))
         return exit_code
 
 
@@ -71,13 +74,14 @@ def execute_command_with_capture(cmd, dry_run=False, success_code=0):
     """
     execute a single shell command and capture the output.
     pass dry_run=True to print the command instead of running it
-    Will raise a runtime error if the command returns an exit code that is different from success_code
+    Will raise a runtime error if the command returns
+        an exit code that is different from success_code
     """
     if dry_run:
-        logging.info('DRY_RUN: {}'.format(cmd))
+        logging.info("DRY_RUN: {}".format(cmd))
         return 0, ""
     else:
         return_code, output = capture_subprocess_output(cmd)
         if return_code != success_code:
-            raise(RuntimeError("command '{}' failed with exit code {}".format(cmd, return_code)))
+            raise RuntimeError("command '{}' failed with exit code {}".format(cmd, return_code))
         return return_code, output

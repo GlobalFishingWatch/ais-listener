@@ -1,21 +1,19 @@
 services:
   server:
-    entrypoint:  [ "ais-listener", "-v", "receiver" ]
-    ports:
-      - "10110:10110/udp"
     build:
       context: .
       target: dev
+    ports:
+      - "10110:10110/udp"
     volumes:
       - ".:/opt/project"
       - "gcp:/root/.config/"
+    entrypoint:  [ "ais-listener", "-v", "receiver" ]
 
   gcloud:
+    image: google/cloud-sdk:latest
     entrypoint: gcloud
-    build:
-      context: .
     volumes:
-      - ".:/opt/project"
       - "gcp:/root/.config/"
 
   dev:

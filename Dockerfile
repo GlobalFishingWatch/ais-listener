@@ -1,4 +1,4 @@
-FROM python:3.13-alpine AS base
+FROM python:3.12-alpine AS base
 
 RUN apk update && apk add build-base
 
@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 10110/udp
 
-ENTRYPOINT [ "gfw-ais-listener"]
+ENTRYPOINT [ "ais-listener"]
 
 # ---------------------------------------------------------------------------------------
 # PROD

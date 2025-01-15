@@ -1,8 +1,8 @@
 """Module with command-line interface for ais-listener serivce."""
+import os
 import logging
 import argparse
 import rich_argparse
-
 
 from ais_listener.pipeline import Pipeline
 from ais_listener.utils import setup_logger, pretty_print_args
@@ -162,6 +162,9 @@ def define_parser():
 def main():
     parser = define_parser()
     ns = parser.parse_args()
+
+    # For some reason, google client is not inferring project from environment.
+    os.environ["GOOGLE_CLOUD_PROJECT"] = ns.project
 
     verbose = ns.verbose
     no_rich_logging = ns.no_rich_logging

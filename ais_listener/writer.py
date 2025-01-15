@@ -7,13 +7,14 @@ from datetime import datetime
 from cloudpathlib import GSClient, GSPath
 from cloudpathlib.enums import FileCacheMode
 
+logger = logging.getLogger(__name__)
+
 
 class GCSShardWriter(object):
-    def __init__(self, gcs_dir, file_prefix, shard_interval=600, log=None):
+    def __init__(self, gcs_dir, file_prefix, shard_interval=600):
         self.gcs_dir = gcs_dir
         self.file_prefix = file_prefix
         self.shard_interval = shard_interval
-        self.log = log or logging.getLogger('main')
 
         self._file = None
         self._gz_file = None
@@ -30,7 +31,8 @@ class GCSShardWriter(object):
         if self._file:
             self._gz_file.close()
             self._file.close()
-            self.log.info(f'Wrote {self._line_count} lines')
+            logger.info(f'Wrote {self._line_count} lines')
+
         self._file = None
         self._gz_file = None
         self._line_count = 0
@@ -45,9 +47,12 @@ class GCSShardWriter(object):
         hash = uuid.uuid4()
 
         filename = f'{self.file_prefix}_{dt}_{tm}_{hash}.nmea.gz'
+
         client = GSClient(file_cache_mode=FileCacheMode.close_file)
         f = GSPath(self.gcs_dir, client=client) / dt / filename
-        self.log.info(f'Writing to {f.as_uri()}')
+
+        logger.info(f'Writing to {f.as_uri()}')
+
         self._file = f.open('wb')
         self._gz_file = gzip.GzipFile(mode='w', fileobj=self._file)
         self._file_start_time = time.time()
@@ -69,7 +74,8 @@ class GCSShardWriter(object):
             self._open()
 
         self._gz_file.write(line.encode('utf-8') + b'\n')
-        self.log.debug(line)
+
+        logger.debug(line)
         self._line_count += 1
 
     def write_lines(self, lines):

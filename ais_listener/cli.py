@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 NAME_TPL = "AIS Listener (v{version})."
 DESCRIPTION = (
-    "A TCP/UDP service that receives NMEA-encoded AIS messages via UDP or TCP "
-    "and writes them to sharded files in GCS."
+    "A TCP/UDP server that receives NMEA-encoded AIS messages "
+    "and publish them to configured outputs."
 )
 
 
@@ -85,30 +85,11 @@ def define_parser():
     )
 
     receiver_args.add_argument(
-        "--gcs-dir",
-        type=str,
-        default="gs://scratch-paul-ttl100/ais-listener/",
-        metavar=" ",
-        help=f"GCS directory to write nmea shard files {HELP_DEFAULT}.",
-    )
-
-    receiver_args.add_argument(
         "--config_file",
         type=str,
         default="sample/sources.yaml",
         metavar=" ",
         help=f"File to read to get mapping of listening ports to source names {HELP_DEFAULT}.",
-    )
-
-    receiver_args.add_argument(
-        "--shard-interval",
-        type=int,
-        default=300,
-        metavar=" ",
-        help=(
-            "Maximum interval in seconds between the first line and last line written to a "
-            f"single shard file {HELP_DEFAULT}."
-        ),
     )
 
     transmitter_args = subparsers.add_parser(

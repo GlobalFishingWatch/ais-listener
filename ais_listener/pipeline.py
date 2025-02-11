@@ -30,24 +30,18 @@ class Pipeline:
         for source in config["sources"]:
             if source["protocol"] == "UDP":
                 receiver = UdpStream(
-                    log=logger,
-                    gcs_dir=self.args.gcs_dir,
                     source=source["source"],
                     port=source["port"],
                     bufsize=self.args.buffer_size,
-                    shard_interval=self.args.shard_interval,
                 )
                 processes.extend(receiver.run())
                 receivers.append(receiver)
             elif source["protocol"] == "TCP":
                 receiver = TcpStream(
-                    log=logger,
-                    gcs_dir=self.args.gcs_dir,
                     source=source["source"],
                     hostname=source["host"],
                     port=source["port"],
                     bufsize=self.args.buffer_size,
-                    shard_interval=self.args.shard_interval,
                     connect_string=source.get("connect_string"),
                 )
                 processes.extend(receiver.run())

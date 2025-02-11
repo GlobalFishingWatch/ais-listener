@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 class MessageStream(object):
     def __init__(
         self,
-        log,
-        gcs_dir,
         source,
         hostname="0.0.0.0",
         port=10110,
@@ -23,18 +21,13 @@ class MessageStream(object):
         shard_interval=300,
         connect_string=None,
     ):
-        self.log = log
-        self.gcs_dir = gcs_dir
         self.source = source
         self.hostname = hostname
         self.port = port
         self.bufsize = bufsize
         self.queue = multiprocessing.Queue()
-        self.max_time_window = 500
-        self.max_message_window = 1000
         self.use_station_id = False
         self.timeout = timeout
-        self.shard_interval = shard_interval
         self.connect_string = connect_string
 
     def read_from_port(self):
@@ -57,7 +50,7 @@ class MessageStream(object):
                     messages_remaining -= 1
             except queue.Empty:
                 messages_remaining = 0
-                # self.log.debug(f'No messages received for {self.timeout} seconds')
+                # logger.debug(f'No messages received for {self.timeout} seconds')
                 # empty = True
 
     def read_messages(self):
@@ -72,7 +65,7 @@ class MessageStream(object):
             logger.info(f"Received {size} messages.")
 
     def run(self):
-        self.log.info(f"listening on {self.hostname}:{self.port}")
+        logger.info(f"listening on {self.hostname}:{self.port}")
         listen_process = multiprocessing.Process(target=UdpStream.read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()
@@ -94,7 +87,7 @@ class TcpStream(MessageStream):
                 sock.connect((self.hostname, self.port))
                 # print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE))
             except ConnectionRefusedError:
-                self.log.error(
+                logger.error(
                     f"Server {self.hostname}:{self.port} refused TCP connection. retrying"
                 )
                 time.sleep(retry_delay)
@@ -122,7 +115,7 @@ class TcpStream(MessageStream):
             sock.close()
 
     def run(self):
-        self.log.info(f"Connecting via TCP {self.hostname}:{self.port}")
+        logger.info(f"Connecting via TCP {self.hostname}:{self.port}")
         listen_process = multiprocessing.Process(target=TcpStream.read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()
@@ -140,7 +133,7 @@ class UdpStream(MessageStream):
             self.queue.put_nowait(message)
 
     def run(self):
-        self.log.info(f"Listening on UDP {self.hostname}:{self.port}")
+        logger.info(f"Listening on UDP {self.hostname}:{self.port}")
         listen_process = multiprocessing.Process(target=UdpStream.read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()

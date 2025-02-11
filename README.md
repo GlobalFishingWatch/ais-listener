@@ -2,10 +2,10 @@
 
 <p align="center">
   <a href="https://codecov.io/gh/GlobalFishingWatch/ais-listener" > 
-    <img src="https://codecov.io/gh/GlobalFishingWatch/ais-listener/graph/badge.svg?token=VrsRdRuei9"/> 
+    <img src="https://codecov.io/gh/GlobalFishingWatch/ais-listener/branch/develop/graph/badge.svg?token=VrsRdRuei9"/> 
   </a>
   <a>
-    <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue">
+    <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
   </a>
   <a>
     <img alt="Docker Engine version" src="https://img.shields.io/badge/DockerEngine-v27-yellow">

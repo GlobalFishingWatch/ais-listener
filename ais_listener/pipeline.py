@@ -57,23 +57,9 @@ class Pipeline:
                     f'Invalid protocol for source {source["source"]}: {source["protocol"]}'
                 )
 
-        # for port in self.args.udp_port_list:
-        #
-        #     source = source_port_map.get(port)
-        #     if not source:
-        #         source = f'{self.args.source}-{port}'
-        #
-        #     server = UdpServer(log=logger,
-        #                        gcs_dir=self.args.gcs_dir,
-        #                        source=source,
-        #                        port=port,
-        #                        bufsize=self.args.buffer_size,
-        #                        shard_interval=self.args.shard_interval)
-        #     processes.extend(server.run())
-        #     servers.append(server)
         while True:
             for receiver in receivers:
-                receiver.write_to_file()
+                receiver.handle()
 
         # multiprocessing.connection.wait([p.sentinel for p in processes])
 

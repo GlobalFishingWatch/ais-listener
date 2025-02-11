@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://codecov.io/gh/GlobalFishingWatch/ais-listener" > 
-    <img src="https://codecov.io/gh/GlobalFishingWatch/ais-listener/branch/develop/graph/badge.svg?token=VrsRdRuei9"/> 
+    <img src="https://codecov.io/gh/GlobalFishingWatch/ais-listener/branch/dev/graph/badge.svg?token=VrsRdRuei9"/> 
   </a>
   <a>
     <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
@@ -26,10 +26,9 @@ A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them
 
 <div align="justify">
 
-This is a dockerized micro service that provides UDP and TCP services. The UDP service will listen on multiple ports 
-for NMEA messages data streams. The TCP service will connect to a designated host and then read messages.
-A tagblock is added or updated to include a timestamp, source and station, and the resulting 
-messages are written in the order received to a sharded and gzipped GCS file.
+This is a dockerized micro service that provides UDP and TCP services.
+The UDP service will listen on multiple ports for NMEA messages data streams.
+The TCP service will connect to a designated host and then read messages.
 
 </div>
 
@@ -67,33 +66,17 @@ make gcp
 
 ```shell
 (.venv) $ ais-listener receiver -h
-usage: AIS Listener (v0.1.0). receiver [-h] [--buffer-size ] [--gcs-dir ] [--config_file ] [--shard-interval ]
+usage: AIS Listener (v0.1.0). receiver [-h] [--buffer-size  ] [--config_file  ]
 
 options:
-  -h, --help          show this help message and exit
-  --buffer-size       Size in bytes for the internal buffer (default: 4096).
-  --gcs-dir           GCS directory to write nmea shard files (default: gs://scratch-paul-ttl100/ais-listener/).
-  --config_file       File to read to get mapping of listening ports to source names (default: sample/sources.yaml).
-  --shard-interval    Maximum interval in seconds between the first line and last line written to a single shard file (default: 300).
-```
-
-Example:
-```shell
-ais-listener -v receiver \
-   --gcs-dir gs://my_bucket/some_dir/ \
-   --config_file gs://my_bucket/source-port-map.yaml
+  -h, --help       show this help message and exit
+  --buffer-size    Size in bytes for the internal buffer (default: 4096).
+  --config_file    File to read to get mapping of listening ports to source names (default: sample/sources.yaml).
 ```
 
 The service will receive files for each source in sources.
 For UDP, the service will listen on the designated port,
 and for TCP the service will connect to the designated host and port.
-
-Output files are written in the given GCS directory in a sub directory by date.
-Files are sharded every 5 minutes by default, and the file name is formatted
-
-`[GCS_DIR/[YYYYMMDD]/][source]_[YYYYMMDD]_[HHMMSS]_[uuid].nmea.gz`.
-
-The source is the source label from `sources.yaml`.
 
 There is also a par of transmitters that can be used for testing.  
 

@@ -55,8 +55,6 @@ class Pipeline:
             for receiver in receivers:
                 receiver.handle()
 
-        # multiprocessing.connection.wait([p.sentinel for p in processes])
-
     def run_udp_transmitter(self):
         server_ip = self.args.receiver_ip
         port = self.args.port

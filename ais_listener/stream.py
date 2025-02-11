@@ -4,8 +4,6 @@ import socket
 import logging
 import multiprocessing
 
-from ais_listener.utils.nmea import format_nmea
-
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +16,6 @@ class MessageStream(object):
         port=10110,
         bufsize=4096,
         timeout=10,
-        shard_interval=300,
         connect_string=None,
     ):
         self.source = source
@@ -58,7 +55,7 @@ class MessageStream(object):
 
     def handle(self):
         messages = self.read_messages()
-        lines = format_nmea(messages, self.source)
+        lines = self._extract_lines(messages)
 
         size = len(list(lines))
         if size > 0:
@@ -71,6 +68,13 @@ class MessageStream(object):
         listen_process.start()
 
         return [listen_process]
+
+    def _extract_lines(self, messages):
+        for message, addr, timestamp, port in messages:
+            lines = (line.strip() for line in message.split('\n'))
+            lines = (line for line in lines if line)
+            for line in lines:
+                yield line
 
 
 class TcpStream(MessageStream):
@@ -85,7 +89,6 @@ class TcpStream(MessageStream):
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 sock.settimeout(60)
                 sock.connect((self.hostname, self.port))
-                # print(sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE))
             except ConnectionRefusedError:
                 logger.error(
                     f"Server {self.hostname}:{self.port} refused TCP connection. retrying"
@@ -107,11 +110,10 @@ class TcpStream(MessageStream):
                     self.queue.put_nowait(message)
 
                 except (ConnectionResetError, socket.timeout):
-                    print(f"Server {self.hostname}:{self.port} TCP connection closed")
+                    logger.info(f"Server {self.hostname}:{self.port} TCP connection closed")
                     break
 
             # 3. proper closure
-            # sock.shutdown(socket.SHUT_RDWR)
             sock.close()
 
     def run(self):

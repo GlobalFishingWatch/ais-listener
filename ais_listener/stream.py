@@ -1,10 +1,13 @@
-import multiprocessing
+import time
 import queue
 import socket
-import time
+import logging
+import multiprocessing
 
-from ais_listener.writer import GCSShardWriter
 from ais_listener.utils.nmea import format_nmea
+
+
+logger = logging.getLogger(__name__)
 
 
 class MessageStream(object):
@@ -33,9 +36,6 @@ class MessageStream(object):
         self.timeout = timeout
         self.shard_interval = shard_interval
         self.connect_string = connect_string
-        self.writer = GCSShardWriter(
-            gcs_dir=self.gcs_dir, file_prefix=self.source, shard_interval=self.shard_interval
-        )
 
     def read_from_port(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Internet  # UDP
@@ -63,12 +63,13 @@ class MessageStream(object):
     def read_messages(self):
         yield from self.read_from_queue()
 
-    def write_to_file(self):
+    def handle(self):
         messages = self.read_messages()
         lines = format_nmea(messages, self.source)
-        self.writer.write_lines(lines)
-        if self.writer.is_stale():
-            self.writer.close()  # close this shard.   A new one will be opened on the next write
+
+        size = len(list(lines))
+        if size > 0:
+            logger.info(f"Received {size} messages.")
 
     def run(self):
         self.log.info(f"listening on {self.hostname}:{self.port}")

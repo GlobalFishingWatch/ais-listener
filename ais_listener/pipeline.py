@@ -84,7 +84,6 @@ class Pipeline:
             logger.info("Waiting for receiver to connect...")
             connection, addr = sock.accept()
             connection.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            # print(connection.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE))
             logger.info("...connected.")
             sock.close()
 

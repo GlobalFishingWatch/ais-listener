@@ -4,9 +4,11 @@ import logging
 import argparse
 import rich_argparse
 
-from ais_listener.pipeline import Pipeline
 from ais_listener.utils import setup_logger, pretty_print_args
 from ais_listener.version import __version__
+from ais_listener import transmitters
+from ais_listener import receivers
+
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,26 @@ DESCRIPTION = (
 HELP_DEFAULT = "(default: %(default)s)"
 HELP_NO_RICH_LOGGING = "Disable rich logging (useful prof production environments)."
 HELP_VERBOSE = "Set logger level to DEBUG."
+HELP_PROJECT = f"GCP project id {HELP_DEFAULT}."
+
+HELP_RECEIVER = "Command to receive data from a TCP or UDP sockets."
+HELP_MAX_PACKET_SIZE = f"Máximum size in bytes for the internal buffer {HELP_DEFAULT}."
+HELP_CONFIG_FILE = f"Path to configuration file sources to listen {HELP_DEFAULT}."
+HELP_REC_PORT = f"UDP/TCP port {HELP_DEFAULT}."
+
+HELP_TRANSMITTER = "Command to send lines from a file through TCP or UDP sockets."
+HELP_PROTOCOL = f"UDP or TCP {HELP_DEFAULT}."
+HELP_HOST = f"For UDP, the IP address of receiver to send to {HELP_DEFAULT}.",
+HELP_PORT = f"UDP/TCP port {HELP_DEFAULT}."
+
+HELP_DEFAULT = f"UDP/TCP port {HELP_DEFAULT}."
+HELP_FILEPATH = f"Path to the file containing the data to send {HELP_DEFAULT}."
+HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
+
+DEFAULT_CONFIG_FILE = "sample/sources.yaml"
+DEFAULT_FILEPATH = "sample/nmea.txt"
+DEFAULT_PROJECT = "world-fishing-827"
+DEFAULT_PROTOCOL = "udp"
 
 
 def formatter(rich: bool = False):
@@ -36,106 +58,41 @@ def formatter(rich: bool = False):
 
 
 def define_parser():
+    # Main parser
     parser = argparse.ArgumentParser(
         prog=NAME_TPL.format(version=__version__),
         description=DESCRIPTION,
         # epilog=EPILOG,
         formatter_class=formatter(),
     )
+    add = parser.add_argument
 
-    subparsers = parser.add_subparsers(dest="operation", required=True)
     # Common arguments
+    add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
+    add("--no-rich-logging", action="store_true", help=HELP_NO_RICH_LOGGING)
+    add("--project", type=str, default=DEFAULT_PROJECT, metavar=" ", help=HELP_PROJECT)
+    add("--protocol", type=str, default=DEFAULT_PROTOCOL, metavar=" ", help=HELP_PROTOCOL)
 
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        default=False,
-        help=HELP_VERBOSE
-    )
+    # Subparsers
+    subparsers = parser.add_subparsers(required=True)
 
-    parser.add_argument(
-        "--no-rich-logging",
-        action="store_true",
-        default=False,
-        help=HELP_NO_RICH_LOGGING
-    )
+    p = subparsers.add_parser("receiver", formatter_class=formatter(), help=HELP_RECEIVER)
+    p.set_defaults(func=receivers.run)
+    add = p.add_argument
 
-    parser.add_argument(
-        "--project",
-        type=str,
-        default="world-fishing-827",
-        metavar=" ",
-        help=f"GCP project id {HELP_DEFAULT}.",
-    )
+    add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
+    add("--config-file", type=str, default=DEFAULT_CONFIG_FILE, metavar=" ", help=HELP_CONFIG_FILE)
+    add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
+    add("--port", type=int, default=10110, metavar=" ", help=HELP_REC_PORT)
 
-    # operations
-    receiver_args = subparsers.add_parser(
-        "receiver",
-        formatter_class=formatter(),
-        help="Receive nmea lines from a TCP ot UDP transmitter."
-    )
+    p = subparsers.add_parser("transmitter", help="Send lines from a file.")
+    p.set_defaults(func=transmitters.run)
+    add = p.add_argument
 
-    receiver_args.add_argument(
-        "--buffer-size",
-        type=int,
-        default=4096,
-        metavar=" ",
-        help=f"Size in bytes for the internal buffer {HELP_DEFAULT}.",
-    )
-
-    receiver_args.add_argument(
-        "--config_file",
-        type=str,
-        default="sample/sources.yaml",
-        metavar=" ",
-        help=f"File to read to get mapping of listening ports to source names {HELP_DEFAULT}.",
-    )
-
-    transmitter_args = subparsers.add_parser(
-        "transmitter",
-        help="Send lines from a file."
-    )
-
-    transmitter_args.add_argument(
-        "--protocol",
-        type=str,
-        default="UDP",
-        metavar=" ",
-        help=f"UDP or TCP {HELP_DEFAULT}.",
-    )
-
-    transmitter_args.add_argument(
-        "--receiver-ip",
-        type=str,
-        default="localhost",
-        metavar=" ",
-        help=f"For UDP, the IP address of receiver to send to {HELP_DEFAULT}.",
-    )
-
-    transmitter_args.add_argument(
-        "--port",
-        type=int,
-        default=10110,
-        metavar=" ",
-        help=f"UDP/TCP port {HELP_DEFAULT}.",
-    )
-
-    transmitter_args.add_argument(
-        "--filename",
-        type=str,
-        default="sample/nmea.txt",
-        metavar=" ",
-        help=f"Name of file to read from {HELP_DEFAULT}.",
-    )
-
-    transmitter_args.add_argument(
-        "--delay",
-        type=float,
-        default=1,
-        metavar=" ",
-        help=f"Delay in seconds between messages {HELP_DEFAULT}.",
-    )
+    add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
+    add("--port", type=int, default=10110, metavar=" ", help=HELP_PORT)
+    add("--delay", type=float, default=1, metavar=" ", help=HELP_DELAY)
+    add("--filepath", type=str, default=DEFAULT_FILEPATH, metavar=" ", help=HELP_FILEPATH)
 
     return parser
 
@@ -149,10 +106,13 @@ def main():
 
     verbose = ns.verbose
     no_rich_logging = ns.no_rich_logging
+    func = ns.func
 
     # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.no_rich_logging
+    del ns.func
+    del ns.project
 
     logger_level = logging.INFO
     if verbose:
@@ -161,9 +121,10 @@ def main():
     setup_logger(level=logger_level, rich=not no_rich_logging, force=True)
 
     logger.info(f"Starting {NAME_TPL.format(version=__version__)}")
-    logger.info(pretty_print_args(vars(ns)))
+    args = vars(ns)
+    logger.info(pretty_print_args(args))
 
-    _ = Pipeline(ns).run()
+    func(**args)
 
 
 if __name__ == "__main__":

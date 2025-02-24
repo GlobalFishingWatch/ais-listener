@@ -133,7 +133,7 @@ class ClientTCPSocketReceiver(SocketReceiver):
             while True:
                 try:
                     data = sock.recv(self._max_packet_size)
-                    packet = Packet(data, self.protocol, self._host, self._port, time.time())
+                    packet = Packet(data, self.protocol, self._host, self._port)
                     self._queue.put_nowait(packet)
                 except (ConnectionResetError, socket.timeout):
                     logger.info(f"Server {self.address} {self.protocol} connection closed.")

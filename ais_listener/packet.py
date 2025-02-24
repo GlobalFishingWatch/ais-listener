@@ -1,16 +1,20 @@
+import time
+
 from dataclasses import dataclass
 from functools import cached_property
 
 
 @dataclass
 class Packet:
-    """Represents a socket packet."""
+    """Represents a received socket packet."""
 
     data: bytes
-    protocol: str
-    host: str
-    port: int
-    timestamp: float
+    protocol: str = None
+    host: str = None
+    port: int = None
+
+    def __post_init__(self):
+        self.timestamp = time.time()
 
     @cached_property
     def decoded_data(self):

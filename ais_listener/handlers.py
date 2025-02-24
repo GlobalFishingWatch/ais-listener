@@ -38,7 +38,7 @@ class UDPRequestHandler(socketserver.BaseRequestHandler, PacketHandler):
     def handle(self):
         data, socket = self.request
         host, port = self.client_address
-        packet = Packet(data, self.protocol, host, port, time.time())
+        packet = Packet(data, self.protocol, host, port)
         self.handle_packet(packet)
 
 

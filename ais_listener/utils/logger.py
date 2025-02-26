@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 
 from rich.logging import RichHandler
 
@@ -34,6 +35,7 @@ def setup_logger(
         handlers.append(logging.StreamHandler())
 
     logging.basicConfig(level=level, format=format_, handlers=handlers, force=force)
+    multiprocessing.log_to_stderr(level)
 
     for module in warning_level:
         logging.getLogger(module).setLevel(logging.WARNING)

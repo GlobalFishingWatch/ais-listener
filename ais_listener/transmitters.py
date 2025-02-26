@@ -8,15 +8,15 @@ import socketserver
 from typing import Generator
 from abc import ABC, abstractmethod
 
-from .handlers import TCPHandler
+from .handlers import TCPRequestHandler
 
 logger = logging.getLogger(__name__)
 
 
 def run(protocol, filepath, **kwargs):
     transmitters = {
-        "udp": UDPSocketTransmitter,
-        "tcp": TCPSocketTransmitter,
+        "UDP": UDPSocketTransmitter,
+        "TCP": TCPSocketTransmitter,
     }
 
     if protocol not in transmitters:
@@ -87,7 +87,7 @@ class TCPSocketTransmitter(SocketTransmitter):
     LOCALHOST = "127.0.0.1"
 
     def start(self, path: str) -> None:
-        with socketserver.TCPServer((self.LOCALHOST, self._port), TCPHandler) as server:
+        with socketserver.TCPServer((self.LOCALHOST, self._port), TCPRequestHandler) as server:
             server.allow_reuse_addres = True
             # server.request_queue_size = 1
             server.data_path = path

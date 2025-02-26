@@ -31,3 +31,7 @@ class Packet:
     def size(self):
         """Returns the amount of messages contained in the packet."""
         return len(self.messages)
+
+    @cached_property
+    def empty(self):
+        return not self.data

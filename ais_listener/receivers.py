@@ -1,6 +1,6 @@
 """Module that encapuslates socket data receivers."""
 
-import time
+import math
 import socket
 import logging
 
@@ -10,23 +10,36 @@ import multiprocessing
 from typing import Generator
 from abc import ABC, abstractmethod
 
+from retry.api import retry_call
+
 from .packet import Packet
 from .handlers import PacketHandler, UDPRequestHandler
 
 logger = logging.getLogger(__name__)
 
+multiprocessing.set_start_method('spawn', force=True)  # Otherwise deadlock can happen.
 
-def run(protocol, config_file=None, **kwargs):
+
+def run(config_file=None, *args, **kwargs):
+    try:
+        receiver = create(*args, **kwargs)
+    except NotImplementedError as e:
+        logger.error(e)
+        return
+
+    receiver.start()
+
+
+def create(protocol, **kwargs):
     receivers = {
-        "udp": UDPSocketReceiver,
-        "tcp_client": ClientTCPSocketReceiver,
+        "UDP": UDPSocketReceiver,
+        "TCP_client": ClientTCPSocketReceiver,
     }
 
     if protocol not in receivers:
         raise NotImplementedError(f"Receiver for protocol '{protocol}' not implemented.")
 
-    receiver = receivers[protocol](**kwargs)
-    receiver.start()
+    return receivers[protocol](**kwargs)
 
 
 class SocketReceiver(ABC):
@@ -58,7 +71,7 @@ class SocketReceiver(ABC):
         return (self._host, self._port)
 
     @abstractmethod
-    def start(self) -> None:
+    def start(self, poll_interval: float = None) -> None:
         """Starts the socket receiver."""
 
 
@@ -67,12 +80,20 @@ class UDPSocketReceiver(SocketReceiver):
 
     protocol = "UDP"
 
-    def start(self) -> None:
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._server = socketserver.ThreadingUDPServer((self._host, self._port), UDPRequestHandler)
+        self._server.max_packet_size = self._max_packet_size
+
+    def start(self, poll_interval: float = 0.5) -> None:
         logger.info(f"Listening {self.protocol} socket on port {self._port}...")
 
-        with socketserver.UDPServer(self.host_and_port, UDPRequestHandler) as server:
-            server.max_packet_size = self._max_packet_size
-            server.serve_forever()
+        with self._server:
+            self._server.serve_forever(poll_interval=poll_interval)
+
+    def shutdown(self):
+        self._server.shutdown()
 
 
 class ClientTCPSocketReceiver(SocketReceiver):
@@ -85,61 +106,57 @@ class ClientTCPSocketReceiver(SocketReceiver):
         connect_string: str = None,
         init_retry_delay: float = 1,
         max_retry_delay: float = 60,
+        max_retries: int = math.inf,
+        socket_factory=socket.socket,
         *args,
         **kwargs,
     ):
-        self._connect_string = connect_string
-        self._queue = multiprocessing.Queue()
-        self._init_retry_delay = init_retry_delay
-        self._max_retry_delay = max_retry_delay
-
         super().__init__(*args, **kwargs)
 
-    def start(self) -> None:
+        self._connect_string = connect_string
+        self._init_retry_delay = init_retry_delay
+        self._max_retry_delay = max_retry_delay
+        self._max_retries = max_retries
+        self._socket_factory = socket_factory
+
+        self.__shutdown_request = False
+        self._queue = multiprocessing.Queue()
+        self._logger = multiprocessing.get_logger()
+
+    def start(self, poll_interval: float = None) -> None:
         logger.info(f"Connecting via {self.protocol} to {self.address}...")
         listen_process = multiprocessing.Process(target=type(self).read_from_port, args=(self,))
         listen_process.daemon = True
         listen_process.start()
 
-        while True:
-            for packet in self.read_from_queue():
-                PacketHandler().handle_packet(packet)
+        try:
+            while not self.__shutdown_request:
+                if self.__shutdown_request:
+                    break
+
+                for packet in self.read_from_queue():
+                    PacketHandler().handle_packet(packet)
+        finally:
+            self.__shutdown_request = False
+            listen_process.terminate()
+            listen_process.join()
 
     def read_from_port(self) -> None:
         """Continuosly reads packets from specified host and port and
-        puts them in the internal queue.
-        """
-        retry_delay = self._init_retry_delay
+        puts them in the internal queue."""
         while True:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            sock.settimeout(60)
             try:
-                sock.connect(self.host_and_port)
-            except ConnectionRefusedError:
-                logger.error(
-                    f"Server {self.address} refused {self.protocol} connection. Retrying..."
-                )
-
-                time.sleep(retry_delay)
-                retry_delay = min(retry_delay * 2, self._max_retry_delay)
-                continue
-
-            if self._connect_string:
-                sock.send(self._connect_string.encode())
-
-            retry_delay = self._init_retry_delay
+                sock = self._get_socket_with_retry()
+            except ConnectionError as e:
+                logger.error(f"Connection error: {e}. Max. retries exceeded.")
+                break
 
             while True:
                 try:
-                    data = sock.recv(self._max_packet_size)
-                    packet = Packet(data, self.protocol, self._host, self._port)
-                    self._queue.put_nowait(packet)
+                    self._enqueue_packet(sock)
                 except (ConnectionResetError, socket.timeout):
-                    logger.info(f"Server {self.address} {self.protocol} connection closed.")
+                    self._logger.info(f"Server {self.address} {self.protocol} connection closed.")
                     break
-
-            sock.close()
 
     def read_from_queue(self, n: int = 1000) -> Generator:
         """Reads n packets from the queue."""
@@ -147,8 +164,44 @@ class ClientTCPSocketReceiver(SocketReceiver):
         while remaining_packets:
             try:
                 packet = self._queue.get_nowait()
-                if packet.size > 0:
+                if not packet.empty:
                     yield packet
                     remaining_packets -= 1
             except multiprocessing.queues.Empty:
                 remaining_packets = 0
+
+    def shutdown(self):
+        self.__shutdown_request = True
+
+    def _get_socket_with_retry(self):
+        return retry_call(
+            self._get_socket,
+            exceptions=ConnectionError,
+            logger=self._logger,
+            backoff=2,
+            delay=self._init_retry_delay,
+            max_delay=self._max_retry_delay,
+            tries=self._max_retries + 1,
+        )
+
+    def _get_socket(self):
+        """If connect() fails, the state of the socket is unspecified.
+        Conforming applications should close the file descriptor and
+        create a new socket before attempting to reconnect.
+        https://man7.org/linux/man-pages/man3/connect.3p.html#APPLICATION_USAGE
+        """
+
+        sock = self._socket_factory(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        sock.settimeout(60)
+        sock.connect(self.host_and_port)
+
+        if self._connect_string:
+            sock.send(self._connect_string.encode())
+
+        return sock
+
+    def _enqueue_packet(self, sock):
+        data = sock.recv(self._max_packet_size)
+        packet = Packet(data, self.protocol, self._host, self._port)
+        self._queue.put_nowait(packet)

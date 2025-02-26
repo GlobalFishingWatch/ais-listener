@@ -1,5 +1,6 @@
 """Module with command-line interface for ais-listener serivce."""
 import os
+import math
 import logging
 import argparse
 import rich_argparse
@@ -42,7 +43,7 @@ HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
 DEFAULT_CONFIG_FILE = "sample/sources.yaml"
 DEFAULT_FILEPATH = "sample/nmea.txt"
 DEFAULT_PROJECT = "world-fishing-827"
-DEFAULT_PROTOCOL = "udp"
+DEFAULT_PROTOCOL = "UDP"
 
 
 def formatter(rich: bool = False):
@@ -84,6 +85,7 @@ def define_parser():
     add("--config-file", type=str, default=DEFAULT_CONFIG_FILE, metavar=" ", help=HELP_CONFIG_FILE)
     add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
     add("--port", type=int, default=10110, metavar=" ", help=HELP_REC_PORT)
+    add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_CONFIG_FILE)
 
     p = subparsers.add_parser("transmitter", help="Send lines from a file.")
     p.set_defaults(func=transmitters.run)

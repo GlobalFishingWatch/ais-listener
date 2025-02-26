@@ -33,7 +33,7 @@ class UDPRequestHandler(socketserver.BaseRequestHandler, PacketHandler):
     there is no connection the client address must be given explicitly
     when sending data back via sendto()."""
 
-    protocol = "udp"
+    protocol = "UDP"
 
     def handle(self):
         data, socket = self.request
@@ -42,7 +42,7 @@ class UDPRequestHandler(socketserver.BaseRequestHandler, PacketHandler):
         self.handle_packet(packet)
 
 
-class TCPHandler(socketserver.BaseRequestHandler):
+class TCPRequestHandler(socketserver.BaseRequestHandler):
     """The request handler class for our server.
     It is instantiated once per connection to the server."""
 

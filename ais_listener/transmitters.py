@@ -13,7 +13,17 @@ from .handlers import TCPRequestHandler
 logger = logging.getLogger(__name__)
 
 
-def run(protocol, filepath, **kwargs):
+def run(filepath, *args, **kwargs):
+    try:
+        transmitter = create(*args, **kwargs)
+    except NotImplementedError as e:
+        logger.error(e)
+        return
+
+    transmitter.start(filepath)
+
+
+def create(protocol, **kwargs):
     transmitters = {
         "UDP": UDPSocketTransmitter,
         "TCP": TCPSocketTransmitter,
@@ -22,8 +32,7 @@ def run(protocol, filepath, **kwargs):
     if protocol not in transmitters:
         raise NotImplementedError(f"Transmitter for protocol {protocol} not implemented.")
 
-    transmitter = transmitters[protocol](**kwargs)
-    transmitter.start(filepath)
+    return transmitters[protocol](**kwargs)
 
 
 class SocketTransmitter(ABC):
@@ -36,14 +45,24 @@ class SocketTransmitter(ABC):
         self._max_chunk_size = max_chunk_size
 
         self._address = f"{self._host}:{self._port}"
+        self.__shutdown_request = False
 
     @abstractmethod
     def start(self, path: str):
         """Starts the socket transmitter."""
 
+    @abstractmethod
+    def shutdown(self):
+        """Terminates the server."""
+
 
 class UDPSocketTransmitter(SocketTransmitter):
     """A socket UDP transmitter implemented as a socket client."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.__shutdown_request = False
 
     def start(self, path: str) -> None:
         logger.info(
@@ -52,12 +71,16 @@ class UDPSocketTransmitter(SocketTransmitter):
             )
         )
 
-        while True:
-            messages = self._read_messages(path)
+        messages = self._read_messages(path)
 
+        while not self.__shutdown_request:
             chunk = []
             for m in messages:
                 chunk.append(m)
+                # logger.info(self.__shutdown_request)
+                if self.__shutdown_request:
+                    break
+
                 if len(chunk) >= self._max_chunk_size:
                     self._send_messages(chunk)
                     chunk = []
@@ -80,19 +103,29 @@ class UDPSocketTransmitter(SocketTransmitter):
         logger.debug(f"Data sent: {data}")
         time.sleep(self._delay)
 
+    def shutdown(self):
+        self.__shutdown_request = True
+
 
 class TCPSocketTransmitter(SocketTransmitter):
     """A socket TCP transmitter implemented as a socket server."""
 
     LOCALHOST = "127.0.0.1"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._server = socketserver.TCPServer((self._host, self._port), TCPRequestHandler)
+        self._server.max_chunk_size = self._max_chunk_size
+        self._server.allow_reuse_addres = True
+        self._server.delay = self._delay
+
     def start(self, path: str) -> None:
-        with socketserver.TCPServer((self.LOCALHOST, self._port), TCPRequestHandler) as server:
-            server.allow_reuse_addres = True
+        logger.info("Listening for TCP requests on {}".format(self._server.server_address))
+        with self._server as server:
             # server.request_queue_size = 1
             server.data_path = path
-            server.delay = self._delay
-            server.max_chunk_size = self._max_chunk_size
-
-            logger.info("Listening for TCP requests on {}".format(server.server_address))
             server.serve_forever()
+
+    def shutdown(self):
+        self._server.shutdown()

@@ -132,7 +132,6 @@ class ClientTCPSocketReceiver(SocketReceiver):
         try:
             while not self.__shutdown_request:
                 if self.__shutdown_request or not listen_process.is_alive():
-                    print("SHUTDOWWWN")
                     break
 
                 for idx, packet in enumerate(self.read_from_queue()):
@@ -207,7 +206,6 @@ class ClientTCPSocketReceiver(SocketReceiver):
                 self._enqueue_packet(sock)
         except (ConnectionResetError, socket.timeout) as e:
             logger.warning(f"Connection closed: {e} Re-connecting...")
-            sock.close()
 
     def _enqueue_packet(self, sock):
         data = sock.recv(self._max_packet_size)

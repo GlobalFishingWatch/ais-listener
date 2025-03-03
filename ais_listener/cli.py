@@ -4,7 +4,6 @@ import sys
 import math
 import logging
 import argparse
-import rich_argparse
 
 from ais_listener.utils import setup_logger, pretty_print_args
 from ais_listener.version import __version__

@@ -132,6 +132,7 @@ class ClientTCPSocketReceiver(SocketReceiver):
         try:
             while not self.__shutdown_request:
                 if self.__shutdown_request or not listen_process.is_alive():
+                    print("SHUTDOWWWN")
                     break
 
                 for idx, packet in enumerate(self.read_from_queue()):
@@ -146,19 +147,15 @@ class ClientTCPSocketReceiver(SocketReceiver):
         puts them in the internal queue."""
         while True:
             try:
+                logger.info("Getting socket connection...")
                 sock = self._get_socket_with_retry()
             except ConnectionError as e:
                 logger.error(f"Connection error: {e}. Max. retries exceeded.")
                 self.shutdown()
                 break
 
-            while True:
-                try:
-                    self._enqueue_packet(sock)
-                except (ConnectionResetError, socket.timeout):
-                    self._logger.info(f"Server {self.address} {self.protocol} connection closed.")
-                    break
-
+            logger.info("Enqueuing packets...")
+            self._enqueue_packets(sock)
             sock.close()
 
     def read_from_queue(self, n: int = 1000) -> Generator:
@@ -203,6 +200,14 @@ class ClientTCPSocketReceiver(SocketReceiver):
             sock.send(self._connect_string.encode())
 
         return sock
+
+    def _enqueue_packets(self, sock):
+        try:
+            while True:
+                self._enqueue_packet(sock)
+        except (ConnectionResetError, socket.timeout) as e:
+            logger.warning(f"Connection closed: {e} Re-connecting...")
+            sock.close()
 
     def _enqueue_packet(self, sock):
         data = sock.recv(self._max_packet_size)

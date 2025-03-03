@@ -41,7 +41,7 @@ class SocketMock:
 
 
 @pytest.mark.parametrize("protocol", ["UDP"])
-def test_server_receiver(protocol):
+def test_UDP_server_receiver(protocol):
     host = "0.0.0.0"
     port = 10110
 
@@ -77,7 +77,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
 
 
 @pytest.mark.parametrize("protocol", ["TCP_client"])
-def test_client_receiver(protocol):
+def test_TCP_client_receiver(protocol):
     host = "0.0.0.0"
     port = 10111
 
@@ -139,12 +139,12 @@ def socket_factory_connect_error(*args, **kwargs):
 
 def socket_factory_recv_error(*args, **kwargs):
     return SocketMock(
-        recv_exception=ConnectionError,
+        recv_exception=ConnectionResetError,
     )
 
 
 @pytest.mark.parametrize("protocol", ["TCP_client"])
-def test_client_receiver_connection_error(protocol):
+def test_TCP_client_receiver_max_retries_exceeded(protocol):
     host = "0.0.0.0"
     port = 10111
 
@@ -153,6 +153,7 @@ def test_client_receiver_connection_error(protocol):
         host=host,
         port=port,
         init_retry_delay=0.01,
+        max_retries=1,
         socket_factory=socket_factory_connect_error,
     )
 
@@ -164,13 +165,13 @@ def test_client_receiver_connection_error(protocol):
     receiver_thread.daemon = True
     receiver_thread.start()
     # Give some time for the client to fail and retry.
-    time.sleep(0.15)
+    time.sleep(0.3)
     receiver.shutdown()
     receiver_thread.join()
 
 
 @pytest.mark.parametrize("protocol", ["TCP_client"])
-def test_client_receiver_recv_error(protocol):
+def test_TCP_client_receiver_recv_error(protocol):
     host = "0.0.0.0"
     port = 10111
 
@@ -179,6 +180,7 @@ def test_client_receiver_recv_error(protocol):
         host=host,
         port=port,
         init_retry_delay=0.01,
+        max_retries=1,
         socket_factory=socket_factory_recv_error,
     )
 
@@ -187,9 +189,16 @@ def test_client_receiver_recv_error(protocol):
         # name='%s serving' % svrcls,
         target=receiver.start,
     )
+
     receiver_thread.daemon = True
     receiver_thread.start()
     # Give some time for the client to fail.
-    time.sleep(0.15)
+    time.sleep(0.3)
     receiver.shutdown()
     receiver_thread.join()
+
+
+def test_run_not_implemented_error():
+    receivers.run(
+        protocol="invalid",
+    )

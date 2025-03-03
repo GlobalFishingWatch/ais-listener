@@ -1,7 +1,7 @@
 [run]
 branch = True
 
-concurrency = multiprocessing,thread
+# concurrency = multiprocessing,thread
 parallel = true
 sigterm = true
 

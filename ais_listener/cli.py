@@ -1,5 +1,6 @@
 """Module with command-line interface for ais-listener serivce."""
 import os
+import sys
 import math
 import logging
 import argparse
@@ -27,9 +28,12 @@ HELP_VERBOSE = "Set logger level to DEBUG."
 HELP_PROJECT = f"GCP project id {HELP_DEFAULT}."
 
 HELP_RECEIVER = "Command to receive data from a TCP or UDP sockets."
-HELP_MAX_PACKET_SIZE = f"Máximum size in bytes for the internal buffer {HELP_DEFAULT}."
 HELP_CONFIG_FILE = f"Path to configuration file sources to listen {HELP_DEFAULT}."
 HELP_REC_PORT = f"UDP/TCP port {HELP_DEFAULT}."
+HELP_MAX_PACKET_SIZE = f"Máximum size in bytes for the internal buffer {HELP_DEFAULT}."
+HELP_MAX_RETRIES = f"Max. retries if a connection fails {HELP_DEFAULT}."
+HELP_RETRY_DELAY = f"Initial retry delay when a connection fails {HELP_DEFAULT}."
+
 
 HELP_TRANSMITTER = "Command to send lines from a file through TCP or UDP sockets."
 HELP_PROTOCOL = f"UDP or TCP {HELP_DEFAULT}."
@@ -46,14 +50,11 @@ DEFAULT_PROJECT = "world-fishing-827"
 DEFAULT_PROTOCOL = "UDP"
 
 
-def formatter(rich: bool = False):
+def formatter():
     """Returns a formatter for argparse help."""
 
     def formatter(prog):
-        if rich:
-            return rich_argparse.RawTextRichHelpFormatter(prog, max_help_position=50)
-        else:
-            return argparse.RawTextHelpFormatter(prog, max_help_position=50)
+        return argparse.RawTextHelpFormatter(prog, max_help_position=50)
 
     return formatter
 
@@ -81,11 +82,12 @@ def define_parser():
     p.set_defaults(func=receivers.run)
     add = p.add_argument
 
-    add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
     add("--config-file", type=str, default=DEFAULT_CONFIG_FILE, metavar=" ", help=HELP_CONFIG_FILE)
     add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
     add("--port", type=int, default=10110, metavar=" ", help=HELP_REC_PORT)
-    add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_CONFIG_FILE)
+    add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
+    add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_MAX_RETRIES)
+    add("--init-retry-delay", type=float, default=1, metavar=" ", help=HELP_RETRY_DELAY)
 
     p = subparsers.add_parser("transmitter", help="Send lines from a file.")
     p.set_defaults(func=transmitters.run)
@@ -99,9 +101,9 @@ def define_parser():
     return parser
 
 
-def main():
+def cli(args):
     parser = define_parser()
-    ns = parser.parse_args()
+    ns = parser.parse_args(args=args or ["--help"])
 
     # For some reason, google client is not inferring project from environment.
     os.environ["GOOGLE_CLOUD_PROJECT"] = ns.project
@@ -127,6 +129,10 @@ def main():
     logger.info(pretty_print_args(args))
 
     func(**args)
+
+
+def main():
+    cli(sys.argv[1:])
 
 
 if __name__ == "__main__":

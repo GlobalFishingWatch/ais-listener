@@ -54,11 +54,15 @@ class SocketReceiver(ABC):
         port: int = 10110,
         max_packet_size: int = 4096,
         source_name: str = "Unknown",
+        max_retries: int = math.inf,
+        init_retry_delay: float = 1,
     ):
         self._host = host
         self._port = port
         self._max_packet_size = max_packet_size
         self._source_name = source_name
+        self._max_retries = max_retries
+        self._init_retry_delay = init_retry_delay
 
     @property
     def address(self) -> str:
@@ -104,9 +108,7 @@ class ClientTCPSocketReceiver(SocketReceiver):
     def __init__(
         self,
         connect_string: str = None,
-        init_retry_delay: float = 1,
         max_retry_delay: float = 60,
-        max_retries: int = math.inf,
         socket_factory=socket.socket,
         *args,
         **kwargs,
@@ -114,9 +116,7 @@ class ClientTCPSocketReceiver(SocketReceiver):
         super().__init__(*args, **kwargs)
 
         self._connect_string = connect_string
-        self._init_retry_delay = init_retry_delay
         self._max_retry_delay = max_retry_delay
-        self._max_retries = max_retries
         self._socket_factory = socket_factory
 
         self.__shutdown_request = False
@@ -131,10 +131,10 @@ class ClientTCPSocketReceiver(SocketReceiver):
 
         try:
             while not self.__shutdown_request:
-                if self.__shutdown_request:
+                if self.__shutdown_request or not listen_process.is_alive():
                     break
 
-                for packet in self.read_from_queue():
+                for idx, packet in enumerate(self.read_from_queue()):
                     PacketHandler().handle_packet(packet)
         finally:
             self.__shutdown_request = False
@@ -149,6 +149,7 @@ class ClientTCPSocketReceiver(SocketReceiver):
                 sock = self._get_socket_with_retry()
             except ConnectionError as e:
                 logger.error(f"Connection error: {e}. Max. retries exceeded.")
+                self.shutdown()
                 break
 
             while True:
@@ -157,6 +158,8 @@ class ClientTCPSocketReceiver(SocketReceiver):
                 except (ConnectionResetError, socket.timeout):
                     self._logger.info(f"Server {self.address} {self.protocol} connection closed.")
                     break
+
+            sock.close()
 
     def read_from_queue(self, n: int = 1000) -> Generator:
         """Reads n packets from the queue."""

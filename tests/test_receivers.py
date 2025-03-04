@@ -7,61 +7,23 @@ import pytest
 
 from ais_listener import receivers
 
-
-UDP_DATA = b"This is an UDP packet."
-TCP_DATA = b"This is a TCP packet."
-
-
-class SocketMock:
-    def __init__(self, connect_exception: Exception = None, recv_exception: Exception = None):
-        self._connect_exception = connect_exception
-        self._recv_exception = recv_exception
-
-    def connect(self, *args, **kwargs):
-        if self._connect_exception is not None:
-            raise self._connect_exception
-
-    def setsockopt(self, *args, **kwargs):
-        pass
-
-    def settimeout(self, *args, **kwargs):
-        pass
-
-    def send(self, *args, **kwargs):
-        pass
-
-    def close(self, *args, **kwargs):
-        pass
-
-    def recv(self, *args, **kwargs):
-        if self._recv_exception is not None:
-            raise self._recv_exception
-
-        return b"Mocked data"
+from tests.conftest import TCPHandler, socket_factory_recv_error, socket_factory_connect_error
 
 
 @pytest.mark.parametrize("protocol", ["UDP"])
-def test_UDP_server_receiver(protocol):
+def test_server_receiver(protocol):
     host = "0.0.0.0"
     port = 10110
 
-    receiver = receivers.create(protocol=protocol, host=host, port=port)
-
-    receiver_thread = threading.Thread(
-        # name='%s serving' % svrcls,
-        target=receiver.start,
-        # Short poll interval to make the test finish quickly.
-        # Time between requests is short enough that we won't wake
-        # up spuriously too many times.
-        kwargs={'poll_interval': 0.01}
-    )
+    receiver = receivers.create(protocol=protocol, host=host, port=port, poll_interval=0.01)
+    receiver_thread = threading.Thread(target=receiver.start)
     receiver_thread.daemon = True
     receiver_thread.start()
 
     # Client that sends some data:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.connect((host, port))
-    sock.send(UDP_DATA)
+    sock.send(b"This is an UDP packet.")
     sock.close()
 
     time.sleep(0.1)
@@ -71,22 +33,20 @@ def test_UDP_server_receiver(protocol):
     # TODO: perform some checks after run.
 
 
-class TCPHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        self.request.sendall(TCP_DATA)
+def run_client_receiver(
+    *args,
+    socket_factory=socket.socket, host="0.0.0.0", port=10110, sleep=0.3,
+    **kwargs
+):
 
-
-@pytest.mark.parametrize("protocol", ["TCP_client"])
-def test_TCP_client_receiver(protocol):
-    host = "0.0.0.0"
-    port = 10111
-
-    # Client receiver.
     receiver = receivers.create(
-        protocol=protocol,
+        *args,
         host=host,
         port=port,
-        connect_string="aFXdRt"
+        init_retry_delay=0.01,
+        max_retries=1,
+        socket_factory=socket_factory,
+        **kwargs,
     )
 
     # Server that accepts connections:
@@ -97,7 +57,6 @@ def test_TCP_client_receiver(protocol):
     server.server_activate()
 
     with server:
-        # Start server thread.
         server_thread = threading.Thread(
             # name='%s serving' % svrcls,
             target=server.serve_forever,
@@ -110,15 +69,12 @@ def test_TCP_client_receiver(protocol):
         server_thread.start()
 
         # Start receiver thread.
-        receiver_thread = threading.Thread(
-            # name='%s serving' % svrcls,
-            target=receiver.start,
-        )
+        receiver_thread = threading.Thread(target=receiver.start)
         receiver_thread.daemon = True
         receiver_thread.start()
 
         # Give some time for the server-client interaction.
-        time.sleep(0.5)
+        time.sleep(sleep)
 
         # shutdown receiver
         receiver.shutdown()
@@ -131,71 +87,19 @@ def test_TCP_client_receiver(protocol):
         # TODO: perform some checks after run.
 
 
-def socket_factory_connect_error(*args, **kwargs):
-    return SocketMock(
-        connect_exception=ConnectionError,
-    )
-
-
-def socket_factory_recv_error(*args, **kwargs):
-    return SocketMock(
-        recv_exception=ConnectionResetError,
-    )
+@pytest.mark.parametrize("protocol", ["TCP_client"])
+def test_client_receiver(protocol):
+    run_client_receiver(protocol, socket_factory=socket.socket, connect_string="aFXdRt")
 
 
 @pytest.mark.parametrize("protocol", ["TCP_client"])
-def test_TCP_client_receiver_max_retries_exceeded(protocol):
-    host = "0.0.0.0"
-    port = 10111
-
-    receiver = receivers.create(
-        protocol=protocol,
-        host=host,
-        port=port,
-        init_retry_delay=0.01,
-        max_retries=1,
-        socket_factory=socket_factory_connect_error,
-    )
-
-    # Start receiver thread.
-    receiver_thread = threading.Thread(
-        # name='%s serving' % svrcls,
-        target=receiver.start,
-    )
-    receiver_thread.daemon = True
-    receiver_thread.start()
-    # Give some time for the client to fail and retry.
-    time.sleep(0.3)
-    receiver.shutdown()
-    receiver_thread.join()
+def test_client_receiver_max_retries_exceeded(protocol):
+    run_client_receiver(protocol, socket_factory=socket_factory_connect_error)
 
 
 @pytest.mark.parametrize("protocol", ["TCP_client"])
-def test_TCP_client_receiver_recv_error(protocol):
-    host = "0.0.0.0"
-    port = 10111
-
-    receiver = receivers.create(
-        protocol=protocol,
-        host=host,
-        port=port,
-        init_retry_delay=0.01,
-        max_retries=1,
-        socket_factory=socket_factory_recv_error,
-    )
-
-    # Start receiver thread.
-    receiver_thread = threading.Thread(
-        # name='%s serving' % svrcls,
-        target=receiver.start,
-    )
-
-    receiver_thread.daemon = True
-    receiver_thread.start()
-    # Give some time for the client to fail.
-    time.sleep(0.3)
-    receiver.shutdown()
-    receiver_thread.join()
+def test_client_receiver_recv_error(protocol):
+    run_client_receiver(protocol, socket_factory=socket_factory_recv_error, sleep=0.4)
 
 
 def test_run_not_implemented_error():

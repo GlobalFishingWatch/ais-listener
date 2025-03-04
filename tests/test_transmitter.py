@@ -7,22 +7,14 @@ import pytest
 
 from ais_listener import transmitters
 
+from tests.conftest import UDPHandler
 
-UDP_DATA = b"This is an UDP packet."
-TCP_DATA = b"This is a TCP packet."
 
 NMEA_FILEPATH = "sample/nmea.txt"
 
 
-class UDPHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        data, socket = self.request
-        host, port = self.client_address
-        socket.sendto(data.upper(), self.client_address)
-
-
 @pytest.mark.parametrize("protocol", ["UDP"])
-def test_UDP_client_transmitter(protocol):
+def test_client_transmitter(protocol):
     host = "0.0.0.0"
     port = 10111
 
@@ -41,7 +33,6 @@ def test_UDP_client_transmitter(protocol):
     server.server_activate()
 
     with server:
-        # Start server thread.
         server_thread = threading.Thread(
             # name='%s serving' % svrcls,
             target=server.serve_forever,
@@ -53,12 +44,8 @@ def test_UDP_client_transmitter(protocol):
         server_thread.daemon = True
         server_thread.start()
 
-        # Start transmitter thread.
-        transmitter_thread = threading.Thread(
-            # name='%s serving' % svrcls,
-            target=transmitter.start,
-            args=[NMEA_FILEPATH]
-        )
+        # Start client transmitter thread.
+        transmitter_thread = threading.Thread(target=transmitter.start, args=[NMEA_FILEPATH])
         transmitter_thread.daemon = True
         transmitter_thread.start()
 
@@ -77,20 +64,17 @@ def test_UDP_client_transmitter(protocol):
 
 
 @pytest.mark.parametrize("protocol", ["TCP"])
-def test_TCP_server_transmitter(protocol):
+def test_server_transmitter(protocol):
     host = "0.0.0.0"
     port = 10110
 
+    # Runs server transmitter.
     transmitter = transmitters.create(protocol=protocol, host=host, port=port)
-    transmitter_thread = threading.Thread(
-        # name='%s serving' % svrcls,
-        target=transmitter.start,
-        args=[NMEA_FILEPATH],
-    )
+    transmitter_thread = threading.Thread(target=transmitter.start, args=[NMEA_FILEPATH])
     transmitter_thread.daemon = True
     transmitter_thread.start()
 
-    # Client that receives some data
+    # Client that receives some data.
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     sock.settimeout(60)
@@ -99,11 +83,10 @@ def test_TCP_server_transmitter(protocol):
     sock.close()
 
     transmitter.shutdown()
+    transmitter_thread.join()
 
     # TODO: perform some checks after run.
 
 
 def test_run_not_implemented_error():
-    transmitters.run(
-        protocol="invalid", filepath="mock"
-    )
+    transmitters.run(protocol="invalid", filepath="mock")

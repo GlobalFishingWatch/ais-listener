@@ -1,3 +1,4 @@
+"""Module that encapsulates request handlers."""
 import time
 import logging
 import threading

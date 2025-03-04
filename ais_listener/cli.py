@@ -1,4 +1,4 @@
-"""Module with command-line interface for ais-listener serivce."""
+"""Module with command-line interface for ais-listener service."""
 import os
 import sys
 import math
@@ -29,7 +29,7 @@ HELP_PROJECT = f"GCP project id {HELP_DEFAULT}."
 HELP_RECEIVER = "Command to receive data from a TCP or UDP sockets."
 HELP_CONFIG_FILE = f"Path to configuration file sources to listen {HELP_DEFAULT}."
 HELP_REC_PORT = f"UDP/TCP port {HELP_DEFAULT}."
-HELP_MAX_PACKET_SIZE = f"Máximum size in bytes for the internal buffer {HELP_DEFAULT}."
+HELP_MAX_PACKET_SIZE = f"Maximum size in bytes for the internal buffer {HELP_DEFAULT}."
 HELP_MAX_RETRIES = f"Max. retries if a connection fails {HELP_DEFAULT}."
 HELP_RETRY_DELAY = f"Initial retry delay when a connection fails {HELP_DEFAULT}."
 

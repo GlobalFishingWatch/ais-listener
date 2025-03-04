@@ -1,4 +1,9 @@
-"""Module that encapuslates socket data receivers."""
+"""Classes for continuous socket data reception and persistence.
+
+This module provides a base class for "receiver" objects and also concrete implementations.
+These objects support the continuous data reception from network sockets and publication
+to the configured data destinations or sinks.
+"""
 
 import math
 import socket
@@ -45,23 +50,35 @@ def create(protocol, **kwargs):
 class SocketReceiver(ABC):
     """Base class for socket data reception.
 
-    Subclasses can implement receivers as servers or clients, as needed.
+    A socket receiver object can be implemented as server or as a client, as needed.
+    In the case of servers, we leverage the socketserver module from the standard library.
+
+    Args:
+        host: Use this host (server) or connect to this host (client).
+        port: The port to use.
+        source_name: Name of the provider. Used only as metadata.
+        max_packet_size: Maximum size in bytes for socket packets.
+        max_retries: Maximum number of retries when a connection fails.
+        max_retry_delay: Maximum delay between retries when a connection fails.
+        init_retry_delay: Initial delay between retries when a connection fails.
     """
 
     def __init__(
         self,
         host: str = "0.0.0.0",
         port: int = 10110,
-        max_packet_size: int = 4096,
         source_name: str = "Unknown",
+        max_packet_size: int = 4096,
         max_retries: int = math.inf,
+        max_retry_delay: float = 60,
         init_retry_delay: float = 1,
     ):
         self._host = host
         self._port = port
-        self._max_packet_size = max_packet_size
         self._source_name = source_name
+        self._max_packet_size = max_packet_size
         self._max_retries = max_retries
+        self._max_retry_delay = max_retry_delay
         self._init_retry_delay = init_retry_delay
 
     @property
@@ -75,40 +92,48 @@ class SocketReceiver(ABC):
         return (self._host, self._port)
 
     @abstractmethod
-    def start(self, poll_interval: float = None) -> None:
+    def start(self) -> None:
         """Starts the socket receiver."""
 
 
 class UDPSocketReceiver(SocketReceiver):
-    """UDP socket receiver implemented as a server."""
+    """UDP socket receiver implemented as a server.
+
+    This class uses socketserver.ThreadingUDPServer class from the standard library.
+    """
 
     protocol = "UDP"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, poll_interval: float = 0.5, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._poll_interval = poll_interval
 
         self._server = socketserver.ThreadingUDPServer((self._host, self._port), UDPRequestHandler)
         self._server.max_packet_size = self._max_packet_size
 
-    def start(self, poll_interval: float = 0.5) -> None:
+    def start(self) -> None:
         logger.info(f"Listening {self.protocol} socket on port {self._port}...")
 
         with self._server:
-            self._server.serve_forever(poll_interval=poll_interval)
+            self._server.serve_forever(poll_interval=self._poll_interval)
 
     def shutdown(self):
         self._server.shutdown()
 
 
 class ClientTCPSocketReceiver(SocketReceiver):
-    """TCP socket receiver implemented as a client."""
+    """TCP socket receiver implemented as a client.
+
+    This class uses multiprocessing to spawn two independent processes that:
+    - Continuously reads packets from a socket and puts them in a shared Queue.
+    - Continuously reads packets from the shared Queue and process them.
+    """
 
     protocol = "TCP"
 
     def __init__(
         self,
         connect_string: str = None,
-        max_retry_delay: float = 60,
         socket_factory=socket.socket,
         *args,
         **kwargs,
@@ -116,16 +141,15 @@ class ClientTCPSocketReceiver(SocketReceiver):
         super().__init__(*args, **kwargs)
 
         self._connect_string = connect_string
-        self._max_retry_delay = max_retry_delay
         self._socket_factory = socket_factory
 
         self.__shutdown_request = False
         self._queue = multiprocessing.Queue()
         self._logger = multiprocessing.get_logger()
 
-    def start(self, poll_interval: float = None) -> None:
+    def start(self) -> None:
         logger.info(f"Connecting via {self.protocol} to {self.address}...")
-        listen_process = multiprocessing.Process(target=type(self).read_from_port, args=(self,))
+        listen_process = multiprocessing.Process(target=type(self)._read_from_socket, args=(self,))
         listen_process.daemon = True
         listen_process.start()
 
@@ -134,16 +158,17 @@ class ClientTCPSocketReceiver(SocketReceiver):
                 if self.__shutdown_request or not listen_process.is_alive():
                     break
 
-                for idx, packet in enumerate(self.read_from_queue()):
+                for packet in self._read_from_queue():
                     PacketHandler().handle_packet(packet)
         finally:
             self.__shutdown_request = False
             listen_process.terminate()
             listen_process.join()
 
-    def read_from_port(self) -> None:
-        """Continuosly reads packets from specified host and port and
-        puts them in the internal queue."""
+    def shutdown(self):
+        self.__shutdown_request = True
+
+    def _read_from_socket(self) -> None:
         while True:
             try:
                 logger.info("Getting socket connection...")
@@ -157,8 +182,7 @@ class ClientTCPSocketReceiver(SocketReceiver):
             self._enqueue_packets(sock)
             sock.close()
 
-    def read_from_queue(self, n: int = 1000) -> Generator:
-        """Reads n packets from the queue."""
+    def _read_from_queue(self, n: int = 1000) -> Generator:
         remaining_packets = n
         while remaining_packets:
             try:
@@ -168,9 +192,6 @@ class ClientTCPSocketReceiver(SocketReceiver):
                     remaining_packets -= 1
             except multiprocessing.queues.Empty:
                 remaining_packets = 0
-
-    def shutdown(self):
-        self.__shutdown_request = True
 
     def _get_socket_with_retry(self):
         return retry_call(

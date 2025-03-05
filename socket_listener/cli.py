@@ -1,45 +1,40 @@
-"""Module with command-line interface for ais-listener service."""
+"""Command-line interface for socket-listener service."""
 import os
 import sys
 import math
 import logging
 import argparse
 
-from ais_listener.utils import setup_logger, pretty_print_args
-from ais_listener.version import __version__
-from ais_listener import transmitters
-from ais_listener import receivers
+from socket_listener.utils import setup_logger, pretty_print_args
+from socket_listener.version import __version__
+from socket_listener import transmitters
+from socket_listener import receivers
 
 
 logger = logging.getLogger(__name__)
 
 
-NAME_TPL = "AIS Listener (v{version})."
+NAME_TPL = "Socket Listener (v{version})."
 DESCRIPTION = (
-    "A TCP/UDP server that receives NMEA-encoded AIS messages "
-    "and publish them to configured outputs."
+    "A service that receives messages through network sockets "
+    "and publish them to desired destinations."
 )
 
-
 HELP_DEFAULT = "(default: %(default)s)"
-HELP_NO_RICH_LOGGING = "Disable rich logging (useful prof production environments)."
+HELP_NO_RICH_LOGGING = "Disable rich logging [useful for production environments]."
 HELP_VERBOSE = "Set logger level to DEBUG."
 HELP_PROJECT = f"GCP project id {HELP_DEFAULT}."
+HELP_PROTOCOL = f"Network protocol to use. One of [UDP, TCP] {HELP_DEFAULT}."
+HELP_PORT = f"Port to use (as server) or to connect to (as client) {HELP_DEFAULT}."
+HELP_HOST = f"IP to use (as server) or to connect to (as client) {HELP_DEFAULT}."
 
-HELP_RECEIVER = "Command to receive data from a TCP or UDP sockets."
-HELP_CONFIG_FILE = f"Path to configuration file sources to listen {HELP_DEFAULT}."
-HELP_REC_PORT = f"UDP/TCP port {HELP_DEFAULT}."
-HELP_MAX_PACKET_SIZE = f"Maximum size in bytes for the internal buffer {HELP_DEFAULT}."
-HELP_MAX_RETRIES = f"Max. retries if a connection fails {HELP_DEFAULT}."
-HELP_RETRY_DELAY = f"Initial retry delay when a connection fails {HELP_DEFAULT}."
+HELP_RECEIVER = "Receives data continuosly from network sockets."
+HELP_CONFIG_FILE = f"Path to configuration file with sources to listen {HELP_DEFAULT}."
+HELP_MAX_PACKET_SIZE = f"Max. size in bytes for the internal buffer [for clients] {HELP_DEFAULT}."
+HELP_MAX_RETRIES = f"Max. retries if a connection fails [for clients] {HELP_DEFAULT}."
+HELP_RETRY_DELAY = f"Initial retry delay when a connection fails [for clients] {HELP_DEFAULT}."
 
-
-HELP_TRANSMITTER = "Command to send lines from a file through TCP or UDP sockets."
-HELP_PROTOCOL = f"UDP or TCP {HELP_DEFAULT}."
-HELP_HOST = f"For UDP, the IP address of receiver to send to {HELP_DEFAULT}.",
-HELP_PORT = f"UDP/TCP port {HELP_DEFAULT}."
-
-HELP_DEFAULT = f"UDP/TCP port {HELP_DEFAULT}."
+HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for testing]."
 HELP_FILEPATH = f"Path to the file containing the data to send {HELP_DEFAULT}."
 HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
 
@@ -73,6 +68,8 @@ def define_parser():
     add("--no-rich-logging", action="store_true", help=HELP_NO_RICH_LOGGING)
     add("--project", type=str, default=DEFAULT_PROJECT, metavar=" ", help=HELP_PROJECT)
     add("--protocol", type=str, default=DEFAULT_PROTOCOL, metavar=" ", help=HELP_PROTOCOL)
+    add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
+    add("--port", type=int, default=10110, metavar=" ", help=HELP_PORT)
 
     # Subparsers
     subparsers = parser.add_subparsers(required=True)
@@ -80,20 +77,14 @@ def define_parser():
     p = subparsers.add_parser("receiver", formatter_class=formatter(), help=HELP_RECEIVER)
     p.set_defaults(func=receivers.run)
     add = p.add_argument
-
     add("--config-file", type=str, default=DEFAULT_CONFIG_FILE, metavar=" ", help=HELP_CONFIG_FILE)
-    add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
-    add("--port", type=int, default=10110, metavar=" ", help=HELP_REC_PORT)
     add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
     add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_MAX_RETRIES)
     add("--init-retry-delay", type=float, default=1, metavar=" ", help=HELP_RETRY_DELAY)
 
-    p = subparsers.add_parser("transmitter", help="Send lines from a file.")
+    p = subparsers.add_parser("transmitter", help=HELP_TRANSMITTER)
     p.set_defaults(func=transmitters.run)
     add = p.add_argument
-
-    add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
-    add("--port", type=int, default=10110, metavar=" ", help=HELP_PORT)
     add("--delay", type=float, default=1, metavar=" ", help=HELP_DELAY)
     add("--filepath", type=str, default=DEFAULT_FILEPATH, metavar=" ", help=HELP_FILEPATH)
 

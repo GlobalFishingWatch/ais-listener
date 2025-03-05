@@ -5,7 +5,7 @@ import socketserver
 
 import pytest
 
-from ais_listener import receivers
+from socket_listener import receivers
 
 from tests.conftest import TCPHandler, socket_factory_recv_error, socket_factory_connect_error
 

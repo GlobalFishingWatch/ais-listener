@@ -1,4 +1,4 @@
-from ais_listener.packet import Packet
+from socket_listener.packet import Packet
 
 
 def test_decoded_data():

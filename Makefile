@@ -46,7 +46,7 @@ upgrade-reqs:
 		'pip-compile -o ${REQS_PROD} -U -v'
 
 venv:
-	python3 -m venv ${VENV_NAME}
+	python -m venv ${VENV_NAME}
 
 install:
 	pip install -r ${REQS_DEV}

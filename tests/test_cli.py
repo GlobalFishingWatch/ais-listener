@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from ais_listener import cli
+from socket_listener import cli
 
 
 @pytest.fixture(autouse=True)

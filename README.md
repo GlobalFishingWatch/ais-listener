@@ -1,4 +1,4 @@
-<h1 align="center" style="border-bottom: none;"> AIS Listener </h1>
+<h1 align="center" style="border-bottom: none;"> Socket Listener </h1>
 
 <p align="center">
   <a href="https://codecov.io/gh/GlobalFishingWatch/ais-listener" > 
@@ -15,7 +15,7 @@
   </a>
 </p>
 
-A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them to GCS.
+A service that receives messages through network sockets and publish them to desired destinations.
 
 [requirements.txt]: requirements.txt
 [pyproject.toml]: pyproject.toml
@@ -26,9 +26,18 @@ A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them
 
 <div align="justify">
 
-This is a dockerized micro service that provides UDP and TCP services.
-The UDP service will listen on multiple ports for NMEA messages data streams.
-The TCP service will connect to a designated host and then read messages.
+The original motivation for this service
+was the ingestion of AIS messages needed by GFW data pipelines.
+We have generalized this functionality for any desired data sources and destinations.
+
+The service can run in different modes,
+depending on the network protocol used
+and the implementation (server-like or client-like).
+In every case we call these objects **_receivers_**.
+
+Currently, the following receivers are supported:
+- UDP server that listens on a socket and accepts incoming requests asynchronously.
+- TCP client that connects to a socket and continuously asks for new messages.
 
 </div>
 

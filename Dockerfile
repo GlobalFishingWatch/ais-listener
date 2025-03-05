@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 10110/udp
 
-ENTRYPOINT [ "ais-listener"]
+ENTRYPOINT [ "socket-listener"]
 
 # ---------------------------------------------------------------------------------------
 # PROD

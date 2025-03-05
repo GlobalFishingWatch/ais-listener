@@ -5,7 +5,7 @@ import socketserver
 
 import pytest
 
-from ais_listener import transmitters
+from socket_listener import transmitters
 
 from tests.conftest import UDPHandler
 

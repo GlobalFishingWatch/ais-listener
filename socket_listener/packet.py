@@ -1,3 +1,4 @@
+"""A class to represent a socket packet."""
 import time
 
 from dataclasses import dataclass
@@ -18,6 +19,7 @@ class Packet:
 
     @cached_property
     def decoded_data(self):
+        """Returns decoded and stripped data."""
         return self.data.decode("utf-8").strip()
 
     @cached_property
@@ -34,4 +36,5 @@ class Packet:
 
     @cached_property
     def empty(self):
+        """Returns whether or not the packet is empty."""
         return not self.data

@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 multiprocessing.set_start_method('spawn', force=True)  # Otherwise deadlock can happen.
 
 
-def run(config_file=None, *args, **kwargs):
+def run(*args, **kwargs):
     try:
         receiver = create(*args, **kwargs)
     except NotImplementedError as e:
@@ -56,7 +56,7 @@ class SocketReceiver(ABC):
     Args:
         host: Use this host (server) or connect to this host (client).
         port: The port to use.
-        source_name: Name of the provider. Used only as metadata.
+        source_name: Name of the provider. Used only for metadata.
         max_packet_size: Maximum size in bytes for socket packets.
         max_retries: Maximum number of retries when a connection fails.
         max_retry_delay: Maximum delay between retries when a connection fails.
@@ -108,11 +108,11 @@ class UDPSocketReceiver(SocketReceiver):
         super().__init__(*args, **kwargs)
         self._poll_interval = poll_interval
 
-        self._server = socketserver.ThreadingUDPServer((self._host, self._port), UDPRequestHandler)
+        self._server = socketserver.ThreadingUDPServer(self.host_and_port, UDPRequestHandler)
         self._server.max_packet_size = self._max_packet_size
 
     def start(self) -> None:
-        logger.info(f"Listening {self.protocol} socket on port {self._port}...")
+        logger.info(f"Listening {self.protocol} socket on {self.address}...")
 
         with self._server:
             self._server.serve_forever(poll_interval=self._poll_interval)
@@ -230,5 +230,5 @@ class ClientTCPSocketReceiver(SocketReceiver):
 
     def _enqueue_packet(self, sock):
         data = sock.recv(self._max_packet_size)
-        packet = Packet(data, self.protocol, self._host, self._port)
+        packet = Packet(data, self.protocol, *self.host_and_port)
         self._queue.put_nowait(packet)

@@ -5,11 +5,10 @@ import math
 import logging
 import argparse
 
-from socket_listener.utils import setup_logger, pretty_print_args
-from socket_listener.version import __version__
-from socket_listener import transmitters
 from socket_listener import receivers
-
+from socket_listener import transmitters
+from socket_listener.version import __version__
+from socket_listener.utils import setup_logger, pretty_print_args, yaml_load
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,7 @@ HELP_PORT = f"Port to use (as server) or to connect to (as client) {HELP_DEFAULT
 HELP_HOST = f"IP to use (as server) or to connect to (as client) {HELP_DEFAULT}."
 
 HELP_RECEIVER = "Receives data continuosly from network sockets."
-HELP_CONFIG_FILE = f"Path to configuration file with sources to listen {HELP_DEFAULT}."
+HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignored {HELP_DEFAULT}."
 HELP_MAX_PACKET_SIZE = f"Max. size in bytes for the internal buffer [for clients] {HELP_DEFAULT}."
 HELP_MAX_RETRIES = f"Max. retries if a connection fails [for clients] {HELP_DEFAULT}."
 HELP_RETRY_DELAY = f"Initial retry delay when a connection fails [for clients] {HELP_DEFAULT}."
@@ -77,7 +76,7 @@ def define_parser():
     p = subparsers.add_parser("receiver", formatter_class=formatter(), help=HELP_RECEIVER)
     p.set_defaults(func=receivers.run)
     add = p.add_argument
-    add("--config-file", type=str, default=DEFAULT_CONFIG_FILE, metavar=" ", help=HELP_CONFIG_FILE)
+    add("--config-file", type=str, metavar=" ", help=HELP_CONFIG_FILE)
     add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
     add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_MAX_RETRIES)
     add("--init-retry-delay", type=float, default=1, metavar=" ", help=HELP_RETRY_DELAY)
@@ -101,12 +100,21 @@ def cli(args):
     verbose = ns.verbose
     no_rich_logging = ns.no_rich_logging
     func = ns.func
+    config_file = ns.config_file
 
     # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.no_rich_logging
     del ns.func
     del ns.project
+    del ns.config_file
+
+    config = {}
+    # Load config file if exists.
+    if config_file is not None:
+        config = yaml_load(config_file)
+    else:
+        config = vars(ns)
 
     logger_level = logging.INFO
     if verbose:
@@ -115,10 +123,9 @@ def cli(args):
     setup_logger(level=logger_level, rich=not no_rich_logging, force=True)
 
     logger.info(f"Starting {NAME_TPL.format(version=__version__)}")
-    args = vars(ns)
-    logger.info(pretty_print_args(args))
+    logger.info(pretty_print_args(config))
 
-    func(**args)
+    func(**config)
 
 
 def main():

@@ -33,11 +33,11 @@ We have generalized this functionality for any desired data sources and destinat
 The service can run in different modes,
 depending on the network protocol used
 and the implementation (server-like or client-like).
-In every case we call these objects **_receivers_**.
+In every case we call these objects **_receivers_** or **_listeners_**.
 
-Currently, the following receivers are supported:
-- UDP server that listens on a socket and accepts incoming requests asynchronously.
-- TCP client that connects to a socket and continuously asks for new messages.
+Currently, the following receivers/listeners are supported:
+- UDP server that listens on a socket and accepts clients requests asynchronously.
+- TCP client that connects to a socket server and continuously requests new data.
 
 </div>
 
@@ -74,13 +74,44 @@ make gcp
 ### Using the CLI
 
 ```shell
-(.venv) $ ais-listener receiver -h
-usage: AIS Listener (v0.1.0). receiver [-h] [--buffer-size  ] [--config_file  ]
+(.venv) $ socket-listener -h
+usage: Socket Listener (v0.1.0). [-h] [-v] [--no-rich-logging] [--project  ] [--protocol  ] [--host  ] [--port  ] {receiver,transmitter} ...
+
+A service that receives messages through network sockets and publish them to desired destinations.
+
+positional arguments:
+  {receiver,transmitter}
+    receiver              Receives data continuosly from network sockets.
+    transmitter           Sends lines from a file through network sockets [useful for testing].
 
 options:
-  -h, --help       show this help message and exit
-  --buffer-size    Size in bytes for the internal buffer (default: 4096).
-  --config_file    File to read to get mapping of listening ports to source names (default: sample/sources.yaml).
+  -h, --help              show this help message and exit
+  -v, --verbose           Set logger level to DEBUG.
+  --no-rich-logging       Disable rich logging [useful for production environments].
+  --project               GCP project id (default: world-fishing-827).
+  --protocol              Network protocol to use. One of [UDP, TCP] (default: UDP).
+  --host                  IP to use (as server) or to connect to (as client) (default: localhost).
+  --port                  Port to use (as server) or to connect to (as client) (default: 10110).
+```
+
+```shell
+(.venv) $ socket-listener receiver -h
+usage: Socket Listener (v0.1.0). receiver [-h] [--config-file  ] [--max-packet-size  ] [--max-retries  ] [--init-retry-delay  ]
+
+options:
+  -h, --help            show this help message and exit
+  --config-file         Path to config file. If passed, rest of CLI args are ignored (default: None).
+  --max-packet-size     Max. size in bytes for the internal buffer [for clients] (default: 4096).
+  --max-retries         Max. retries if a connection fails [for clients] (default: inf).
+  --init-retry-delay    Initial retry delay when a connection fails [for clients] (default: 1).
+```
+
+Example of config file:
+```yaml
+source_name: 'kystverket'
+protocol: TCP_client
+host: 153.44.253.27
+port: 5631
 ```
 
 The service will receive files for each source in sources.

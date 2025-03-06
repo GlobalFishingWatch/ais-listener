@@ -1,0 +1,3 @@
+source_name: 'ais-listener'
+protocol: UDP
+port: 10110

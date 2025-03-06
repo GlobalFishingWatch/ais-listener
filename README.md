@@ -17,8 +17,9 @@
 
 A service that receives messages through network sockets and publish them to desired destinations.
 
-[requirements.txt]: requirements.txt
+[pip-tools]: https://pip-tools.readthedocs.io/en/stable/
 [pyproject.toml]: pyproject.toml
+[requirements.txt]: requirements.txt
 [sample/sources.yaml]: sample/sources.yaml
 [sample/nmea.txt]: sample/nmea.txt
 
@@ -36,8 +37,8 @@ and the implementation (server-like or client-like).
 In every case we call these objects **_receivers_** or **_listeners_**.
 
 Currently, the following receivers/listeners are supported:
-- UDP server that listens on a socket and accepts clients requests asynchronously.
-- TCP client that connects to a socket server and continuously requests new data.
+- UDPSocketReceiver: UDP server that listens on a socket and accepts clients requests asynchronously.
+- ClientTCPSocketReceiver: TCP client that connects to a socket server and continuously requests new data.
 
 </div>
 
@@ -106,48 +107,58 @@ options:
   --init-retry-delay    Initial retry delay when a connection fails [for clients] (default: 1).
 ```
 
+Examples:
+```shell
+socket-listener --protocol TCP_client --host 153.44.253.27 --port 5631 receiver
+```
+
+```shell
+socket-listener --protocol UDP receiver
+```
+
+```shell
+socket-listener receiver -c config/TCP-client-kystverket.yaml
+```
+
 Example of config file:
 ```yaml
 source_name: 'kystverket'
 protocol: TCP_client
 host: 153.44.253.27
 port: 5631
+max_packet_size: 4096
+max_retries: .inf
+max_retry_delay: 60
+init_retry_delay: 1
 ```
-
-The service will receive files for each source in sources.
-For UDP, the service will listen on the designated port,
-and for TCP the service will connect to the designated host and port.
-
-There is also a par of transmitters that can be used for testing.  
-
-To send test messages via UDP use
-```shell
-ais-listener -v transmitter \
-  --protocol=UDP \
-  --port=[PORT_TO_LISTEN] 
-```
-
-To send messages via TCP, use
-```shell
-ais-listener -v transmitter \
-  --protocol=TCP \
-  --port [PORT_TO_CONNECT]
-```
-
-Running this will read values from [sample/nmea.txt] by default.
-
-You can run the receiver and the transmitter locally and the transmitter should send messages to the receiver.   
-Use `-v` for verbose output and both transmitter and receiver should print every message to the console.
 
 
 ### Running within docker
 
 To run in docker, displaying the server's command line parameters 
 ```shell
-docker compose run --rm server --help
+docker compose run --rm server --protocol TCP_client --host 153.44.253.27 --port 5631
 ```
 
-## Updating dependencies
+```shell
+docker compose run --rm server -c config/TCP-client-kystverket.yaml
+```
+
+## Development
+
+A pair of transmitters that can be used for testing.  
+
+To send test messages via UDP use
+```shell
+socket-listener -v -protocol=UDP --port=[PORT_TO_LISTEN] transmitter
+```
+
+To send messages via TCP, use
+```shell
+socket-listener -v --protocol=TCP --port [PORT_TO_CONNECT] transmitter
+```
+
+### Updating dependencies
 
 The [requirements.txt] contains all transitive dependencies pinned to specific versions.
 This file is compiled automatically with [pip-tools], based on [pyproject.toml].
@@ -172,7 +183,7 @@ For convenience, there are some shell scripts for building and running using `do
 + `build.sh`: This will run `docker compose build` and pass in some extra info on the current git commit.
 + `cloud-build.sh`: This will do a manual cloud build and publish the docker container to the cloud registry.
 
-## Build and Deploy
+### Build and Deploy
 
 This tool is designed to be run in a GCE instance as a docker image.   
 

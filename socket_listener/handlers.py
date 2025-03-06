@@ -66,7 +66,10 @@ class TCPRequestHandler(socketserver.BaseRequestHandler):
 
     def _send_messages(self, messages: list[bytes]) -> None:
         data = b"\n".join(messages)
-        self.request.sendall(b"\n".join(messages))
+        self.request.sendall(data)
         logger.info(f"Finished sending {len(messages)} messages to {self.client_address}.")
-        logger.debug(f"Data sent: {data}")
+        logger.debug("Messages sent: ")
+        for m in messages:
+            logger.debug(m)
+
         time.sleep(self.server.delay)

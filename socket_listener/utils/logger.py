@@ -25,6 +25,7 @@ def setup_logger(
         warning_level: list of packages/modules for which to set the log level as WARNING.
         error_level: list of packages/modules for which to set the log level as ERROR.
         force: If true, forces the root logger config replacing the one done on other places.
+        rich: Whether to use rich library to colorize console output.
     """
 
     handlers = []

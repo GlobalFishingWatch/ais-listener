@@ -18,6 +18,10 @@ DESCRIPTION = (
     "A service that receives messages through network sockets "
     "and publish them to desired destinations."
 )
+EPILOG = (
+    "Example: \n"
+    "    socket-listener --protocol TCP_client --host 153.44.253.27 --port 5631 receiver "
+)
 
 HELP_DEFAULT = "(default: %(default)s)"
 HELP_NO_RICH_LOGGING = "Disable rich logging [useful for production environments]."
@@ -57,13 +61,14 @@ def define_parser():
     parser = argparse.ArgumentParser(
         prog=NAME_TPL.format(version=__version__),
         description=DESCRIPTION,
-        # epilog=EPILOG,
+        epilog=EPILOG,
         formatter_class=formatter(),
     )
     add = parser.add_argument
 
     # Common arguments
     add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
+    add("-c", "--config-file", type=str, metavar=" ", help=HELP_CONFIG_FILE)
     add("--no-rich-logging", action="store_true", help=HELP_NO_RICH_LOGGING)
     add("--project", type=str, default=DEFAULT_PROJECT, metavar=" ", help=HELP_PROJECT)
     add("--protocol", type=str, default=DEFAULT_PROTOCOL, metavar=" ", help=HELP_PROTOCOL)
@@ -76,7 +81,6 @@ def define_parser():
     p = subparsers.add_parser("receiver", formatter_class=formatter(), help=HELP_RECEIVER)
     p.set_defaults(func=receivers.run)
     add = p.add_argument
-    add("--config-file", type=str, metavar=" ", help=HELP_CONFIG_FILE)
     add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
     add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_MAX_RETRIES)
     add("--init-retry-delay", type=float, default=1, metavar=" ", help=HELP_RETRY_DELAY)

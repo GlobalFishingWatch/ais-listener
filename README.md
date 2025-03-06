@@ -75,33 +75,19 @@ make gcp
 ### Using the CLI
 
 ```shell
-(.venv) $ socket-listener -h
-usage: Socket Listener (v0.1.0). [-h] [-v] [--no-rich-logging] [--project  ] [--protocol  ] [--host  ] [--port  ] {receiver,transmitter} ...
-
-A service that receives messages through network sockets and publish them to desired destinations.
-
-positional arguments:
-  {receiver,transmitter}
-    receiver              Receives data continuosly from network sockets.
-    transmitter           Sends lines from a file through network sockets [useful for testing].
-
-options:
-  -h, --help              show this help message and exit
-  -v, --verbose           Set logger level to DEBUG.
-  --no-rich-logging       Disable rich logging [useful for production environments].
-  --project               GCP project id (default: world-fishing-827).
-  --protocol              Network protocol to use. One of [UDP, TCP] (default: UDP).
-  --host                  IP to use (as server) or to connect to (as client) (default: localhost).
-  --port                  Port to use (as server) or to connect to (as client) (default: 10110).
-```
-
-```shell
 (.venv) $ socket-listener receiver -h
-usage: Socket Listener (v0.1.0). receiver [-h] [--config-file  ] [--max-packet-size  ] [--max-retries  ] [--init-retry-delay  ]
+usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c  ] [--no-rich-logging] [--project  ] [--protocol  ] [--host  ] [--port  ] [--max-packet-size  ] [--max-retries  ]
+                                          [--init-retry-delay  ]
 
 options:
   -h, --help            show this help message and exit
-  --config-file         Path to config file. If passed, rest of CLI args are ignored (default: None).
+  -v, --verbose         Set logger level to DEBUG.
+  -c, --config-file     Path to config file. If passed, rest of CLI args are ignored (default: None).
+  --no-rich-logging     Disable rich logging [useful for production environments].
+  --project             GCP project id (default: world-fishing-827).
+  --protocol            Network protocol to use. One of [UDP, TCP] (default: UDP).
+  --host                IP to use (as server) or to connect to (as client) (default: localhost).
+  --port                Port to use (as server) or to connect to (as client) (default: 10110).
   --max-packet-size     Max. size in bytes for the internal buffer [for clients] (default: 4096).
   --max-retries         Max. retries if a connection fails [for clients] (default: inf).
   --init-retry-delay    Initial retry delay when a connection fails [for clients] (default: 1).
@@ -109,18 +95,18 @@ options:
 
 Examples:
 ```shell
-socket-listener --protocol TCP_client --host 153.44.253.27 --port 5631 receiver
+socket-listener receiver --protocol TCP_client --host 153.44.253.27 --port 5631
 ```
 
 ```shell
-socket-listener --protocol UDP receiver
+socket-listener receiver --protocol UDP
 ```
 
 ```shell
 socket-listener receiver -c config/TCP-client-kystverket.yaml
 ```
 
-Example of config file:
+Example of configuration file:
 ```yaml
 source_name: 'kystverket'
 protocol: TCP_client
@@ -132,30 +118,29 @@ max_retry_delay: 60
 init_retry_delay: 1
 ```
 
+#### Running within docker
 
-### Running within docker
-
-To run in docker, displaying the server's command line parameters 
+To run in docker:
 ```shell
-docker compose run --rm server --protocol TCP_client --host 153.44.253.27 --port 5631
+docker compose run --rm receiver --protocol TCP_client --host 153.44.253.27 --port 5631
 ```
 
 ```shell
-docker compose run --rm server -c config/TCP-client-kystverket.yaml
+docker compose run --rm receiver -c config/TCP-client-kystverket.yaml
 ```
 
 ## Development
 
-A pair of transmitters that can be used for testing.  
+A pair of _**transmitters**_ are provided that can be used for testing.
 
-To send test messages via UDP use
+To send test messages via UDP (client-like) use
 ```shell
-socket-listener -v -protocol=UDP --port=[PORT_TO_LISTEN] transmitter
+socket-listener transmitter --protocol=UDP --port [PORT_TO_LISTEN]
 ```
 
-To send messages via TCP, use
+To send messages via TCP (server-like), use
 ```shell
-socket-listener -v --protocol=TCP --port [PORT_TO_CONNECT] transmitter
+socket-listener transmitter --protocol=TCP --port [PORT_TO_CONNECT]
 ```
 
 ### Updating dependencies

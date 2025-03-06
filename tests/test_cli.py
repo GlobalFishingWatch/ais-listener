@@ -21,9 +21,9 @@ def cleanup_logging_handlers():
 
 def test_cli(tmp_path, cleanup_logging_handlers):
     args = [
+        "receiver",
         "-v",
         "--protocol", "TCP_client",
-        "receiver",
         "--max-retries", "1",
         "--init-retry-delay", "0"
     ]
@@ -36,9 +36,9 @@ def test_cli(tmp_path, cleanup_logging_handlers):
 
 def test_cli_no_rich_logging(tmp_path, cleanup_logging_handlers):
     args = [
+        "receiver",
         "--no-rich-logging",
         "--protocol", "TCP_client",
-        "receiver",
         "--max-retries", "1",
         "--init-retry-delay", "0"
     ]

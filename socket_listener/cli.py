@@ -20,7 +20,7 @@ DESCRIPTION = (
 )
 EPILOG = (
     "Example: \n"
-    "    socket-listener --protocol TCP_client --host 153.44.253.27 --port 5631 receiver "
+    "    socket-listener receiver --protocol TCP_client --host 153.44.253.27 --port 5631 "
 )
 
 HELP_DEFAULT = "(default: %(default)s)"
@@ -41,7 +41,6 @@ HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for 
 HELP_FILEPATH = f"Path to the file containing the data to send {HELP_DEFAULT}."
 HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
 
-DEFAULT_CONFIG_FILE = "sample/sources.yaml"
 DEFAULT_FILEPATH = "sample/nmea.txt"
 DEFAULT_PROJECT = "world-fishing-827"
 DEFAULT_PROTOCOL = "UDP"
@@ -64,8 +63,10 @@ def define_parser():
         epilog=EPILOG,
         formatter_class=formatter(),
     )
-    add = parser.add_argument
 
+    common = argparse.ArgumentParser(add_help=False)
+
+    add = common.add_argument
     # Common arguments
     add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
     add("-c", "--config-file", type=str, metavar=" ", help=HELP_CONFIG_FILE)
@@ -78,14 +79,18 @@ def define_parser():
     # Subparsers
     subparsers = parser.add_subparsers(required=True)
 
-    p = subparsers.add_parser("receiver", formatter_class=formatter(), help=HELP_RECEIVER)
+    p = subparsers.add_parser(
+        "receiver", formatter_class=formatter(), parents=[common], help=HELP_RECEIVER)
+
     p.set_defaults(func=receivers.run)
     add = p.add_argument
     add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
     add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_MAX_RETRIES)
     add("--init-retry-delay", type=float, default=1, metavar=" ", help=HELP_RETRY_DELAY)
 
-    p = subparsers.add_parser("transmitter", help=HELP_TRANSMITTER)
+    p = subparsers.add_parser(
+        "transmitter", formatter_class=formatter(), parents=[common], help=HELP_TRANSMITTER)
+
     p.set_defaults(func=transmitters.run)
     add = p.add_argument
     add("--delay", type=float, default=1, metavar=" ", help=HELP_DELAY)
@@ -114,7 +119,6 @@ def cli(args):
     del ns.config_file
 
     config = {}
-    # Load config file if exists.
     if config_file is not None:
         config = yaml_load(config_file)
     else:

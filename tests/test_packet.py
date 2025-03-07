@@ -15,6 +15,15 @@ def test_messages():
     p = Packet(b"123 \n 456")
 
     assert len(p.messages) == 2
-    assert len(p.messages) == p.size
     assert p.messages[0] == "123"
     assert p.messages[1] == "456"
+
+
+def test_size():
+    p = Packet(b"123 \n 456")
+    assert len(p.messages) == p.size
+
+
+def test_empty():
+    p = Packet(b"123 \n 456")
+    assert not p.empty

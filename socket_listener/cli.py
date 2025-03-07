@@ -1,7 +1,6 @@
 """Command-line interface for socket-listener service."""
 import os
 import sys
-import math
 import logging
 import argparse
 
@@ -20,22 +19,20 @@ DESCRIPTION = (
 )
 EPILOG = (
     "Example: \n"
-    "    socket-listener receiver --protocol TCP_client --host 153.44.253.27 --port 5631 "
+    "    socket-listener receiver --protocol UDP --port 10112 --max-packet-size 2048"
 )
 
 HELP_DEFAULT = "(default: %(default)s)"
 HELP_NO_RICH_LOGGING = "Disable rich logging [useful for production environments]."
 HELP_VERBOSE = "Set logger level to DEBUG."
 HELP_PROJECT = f"GCP project id {HELP_DEFAULT}."
-HELP_PROTOCOL = f"Network protocol to use. One of [UDP, TCP] {HELP_DEFAULT}."
-HELP_PORT = f"Port to use (as server) or to connect to (as client) {HELP_DEFAULT}."
-HELP_HOST = f"IP to use (as server) or to connect to (as client) {HELP_DEFAULT}."
-
+HELP_PROTOCOL = f"Network protocol to use {HELP_DEFAULT}."
+HELP_PORT = f"Port to use {HELP_DEFAULT}."
+HELP_HOST = f"IP to use {HELP_DEFAULT}."
+HELP_THREAD = "Run main process in a separate thread [Useful for testing]."
 HELP_RECEIVER = "Receives data continuosly from network sockets."
 HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignored {HELP_DEFAULT}."
-HELP_MAX_PACKET_SIZE = f"Max. size in bytes for the internal buffer [for clients] {HELP_DEFAULT}."
-HELP_MAX_RETRIES = f"Max. retries if a connection fails [for clients] {HELP_DEFAULT}."
-HELP_RETRY_DELAY = f"Initial retry delay when a connection fails [for clients] {HELP_DEFAULT}."
+HELP_MAX_PACKET_SIZE = f"The maximum amount of data to be received at once {HELP_DEFAULT}."
 
 HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for testing]."
 HELP_FILEPATH = f"Path to the file containing the data to send {HELP_DEFAULT}."
@@ -75,6 +72,7 @@ def define_parser():
     add("--protocol", type=str, default=DEFAULT_PROTOCOL, metavar=" ", help=HELP_PROTOCOL)
     add("--host", type=str, default="localhost", metavar=" ", help=HELP_HOST)
     add("--port", type=int, default=10110, metavar=" ", help=HELP_PORT)
+    add("--thread", action="store_true", help=HELP_THREAD)
 
     # Subparsers
     subparsers = parser.add_subparsers(required=True)
@@ -85,8 +83,6 @@ def define_parser():
     p.set_defaults(func=receivers.run)
     add = p.add_argument
     add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
-    add("--max-retries", type=int, default=math.inf, metavar=" ", help=HELP_MAX_RETRIES)
-    add("--init-retry-delay", type=float, default=1, metavar=" ", help=HELP_RETRY_DELAY)
 
     p = subparsers.add_parser(
         "transmitter", formatter_class=formatter(), parents=[common], help=HELP_TRANSMITTER)
@@ -120,20 +116,17 @@ def cli(args):
 
     config = {}
     if config_file is not None:
+        logger.info("Loading config file.")
         config = yaml_load(config_file)
     else:
         config = vars(ns)
 
-    logger_level = logging.INFO
-    if verbose:
-        logger_level = logging.DEBUG
-
-    setup_logger(level=logger_level, rich=not no_rich_logging, force=True)
+    setup_logger(verbose=verbose, rich=not no_rich_logging, force=True)
 
     logger.info(f"Starting {NAME_TPL.format(version=__version__)}")
     logger.info(pretty_print_args(config))
 
-    func(**config)
+    return func(**config)
 
 
 def main():

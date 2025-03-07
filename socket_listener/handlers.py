@@ -1,10 +1,7 @@
 """Module that encapsulates request handlers."""
-import time
 import logging
 import threading
 import socketserver
-
-from typing import Generator
 
 from .packet import Packet
 
@@ -41,35 +38,3 @@ class UDPRequestHandler(socketserver.BaseRequestHandler, PacketHandler):
         host, port = self.client_address
         packet = Packet(data, self.protocol, host, port)
         self.handle_packet(packet)
-
-
-class TCPRequestHandler(socketserver.BaseRequestHandler):
-    """The request handler class for our server.
-    It is instantiated once per connection to the server."""
-
-    def handle(self) -> None:
-        logger.info(f"Received request from {self.client_address}:")
-        messages = self._read_messages(self.server.data_path)
-
-        chunk = []
-        for m in messages:
-            chunk.append(m)
-            if len(chunk) >= self.server.max_chunk_size:
-                self._send_messages(chunk)
-                chunk = []
-
-    def _read_messages(self, path) -> Generator:
-        logger.info(f"Reading messages from {path}.")
-        with open(path, "r") as f:
-            for line in f:
-                yield line.strip().encode("utf-8")
-
-    def _send_messages(self, messages: list[bytes]) -> None:
-        data = b"\n".join(messages)
-        self.request.sendall(data)
-        logger.info(f"Finished sending {len(messages)} messages to {self.client_address}.")
-        logger.debug("Messages sent: ")
-        for m in messages:
-            logger.debug(m)
-
-        time.sleep(self.server.delay)

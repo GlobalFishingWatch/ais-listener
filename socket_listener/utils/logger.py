@@ -1,6 +1,5 @@
 """Logger utitlities."""
 import logging
-import multiprocessing
 
 from rich.logging import RichHandler
 
@@ -10,7 +9,7 @@ _DEFAULT_LOG_FORMAT = f"{_TIME_ENTRY}%(name)s - %(message)s"
 
 
 def setup_logger(
-    level: str = logging.INFO,
+    verbose: bool = False,
     format_: str = _DEFAULT_LOG_FORMAT,
     warning_level: tuple = (),
     error_level: tuple = (),
@@ -36,8 +35,11 @@ def setup_logger(
     else:
         handlers.append(logging.StreamHandler())
 
+    level = logging.INFO
+    if verbose:
+        level = logging.DEBUG
+
     logging.basicConfig(level=level, format=format_, handlers=handlers, force=force)
-    multiprocessing.log_to_stderr(level)
 
     for module in warning_level:
         logging.getLogger(module).setLevel(logging.WARNING)

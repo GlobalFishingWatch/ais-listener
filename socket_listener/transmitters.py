@@ -3,30 +3,36 @@
 import time
 import socket
 import logging
-import socketserver
+import threading
 
 from typing import Generator
 from abc import ABC, abstractmethod
 
-from .handlers import TCPRequestHandler
 
 logger = logging.getLogger(__name__)
 
 
-def run(filepath, *args, **kwargs):
+def run(filepath, *args, thread=False, **kwargs):
     try:
         transmitter = create(*args, **kwargs)
     except NotImplementedError as e:
         logger.error(e)
         return
 
+    if thread:
+        thread = threading.Thread(target=transmitter.start, args=[filepath])
+        thread.daemon = True
+        thread.start()
+
+        return transmitter, thread
+
     transmitter.start(filepath)
+    return transmitter, None
 
 
-def create(protocol, **kwargs):
+def create(protocol="UDP", **kwargs):
     transmitters = {
         "UDP": UDPSocketTransmitter,
-        "TCP": TCPSocketTransmitter,
     }
 
     if protocol not in transmitters:
@@ -38,7 +44,9 @@ def create(protocol, **kwargs):
 class SocketTransmitter(ABC):
     """Base class for socket data transmission."""
 
-    def __init__(self, host: str, port: int, delay: float = 1, max_chunk_size: int = 50):
+    def __init__(
+        self, host: str = "0.0.0.0", port: int = 10110, delay: float = 1, max_chunk_size: int = 50
+    ):
         self._host = host
         self._port = port
         self._delay = delay
@@ -66,7 +74,7 @@ class UDPSocketTransmitter(SocketTransmitter):
 
     def start(self, path: str) -> None:
         logger.info(
-            "Sending {} messages using UDP to {} every {} seconds".format(
+            "Sending a maximum of {} messages using UDP to {} every {} seconds".format(
                 self._max_chunk_size, self._address, self._delay
             )
         )
@@ -77,7 +85,6 @@ class UDPSocketTransmitter(SocketTransmitter):
             chunk = []
             for m in messages:
                 chunk.append(m)
-                # logger.info(self.__shutdown_request)
                 if self.__shutdown_request:
                     break
 
@@ -105,27 +112,3 @@ class UDPSocketTransmitter(SocketTransmitter):
 
     def shutdown(self):
         self.__shutdown_request = True
-
-
-class TCPSocketTransmitter(SocketTransmitter):
-    """A socket TCP transmitter implemented as a socket server."""
-
-    LOCALHOST = "127.0.0.1"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self._server = socketserver.TCPServer((self._host, self._port), TCPRequestHandler)
-        self._server.max_chunk_size = self._max_chunk_size
-        self._server.allow_reuse_addres = True
-        self._server.delay = self._delay
-
-    def start(self, path: str) -> None:
-        logger.info("Listening for TCP requests on {}".format(self._server.server_address))
-        with self._server as server:
-            # server.request_queue_size = 1
-            server.data_path = path
-            server.serve_forever()
-
-    def shutdown(self):
-        self._server.shutdown()

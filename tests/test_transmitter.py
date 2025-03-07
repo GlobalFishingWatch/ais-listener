@@ -7,14 +7,21 @@ import pytest
 
 from socket_listener import transmitters
 
-from tests.conftest import UDPHandler
+from tests.conftest import UDPTestHandler
 
 
 NMEA_FILEPATH = "sample/nmea.txt"
+EMPTY_FILEPATH = "sample/empty.txt"
 
 
-@pytest.mark.parametrize("protocol", ["UDP"])
-def test_client_transmitter(protocol):
+@pytest.mark.parametrize(
+    "protocol, filepath",
+    [
+        pytest.param("UDP", NMEA_FILEPATH, id="NMEA"),
+        pytest.param("UDP", EMPTY_FILEPATH, id="EMPTY"),
+    ]
+)
+def test_client_transmitter(protocol, filepath):
     host = "0.0.0.0"
     port = 10111
 
@@ -26,7 +33,7 @@ def test_client_transmitter(protocol):
     )
 
     # Server that accepts connections:
-    server = socketserver.UDPServer((host, port), UDPHandler, bind_and_activate=False)
+    server = socketserver.UDPServer((host, port), UDPTestHandler, bind_and_activate=False)
     server.allow_reuse_addres = True
     server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.server_bind()
@@ -45,7 +52,7 @@ def test_client_transmitter(protocol):
         server_thread.start()
 
         # Start client transmitter thread.
-        transmitter_thread = threading.Thread(target=transmitter.start, args=[NMEA_FILEPATH])
+        transmitter_thread = threading.Thread(target=transmitter.start, args=[filepath])
         transmitter_thread.daemon = True
         transmitter_thread.start()
 
@@ -63,30 +70,14 @@ def test_client_transmitter(protocol):
         # TODO: perform some checks after run.
 
 
-@pytest.mark.parametrize("protocol", ["TCP"])
-def test_server_transmitter(protocol):
-    host = "0.0.0.0"
-    port = 10110
-
-    # Runs server transmitter.
-    transmitter = transmitters.create(protocol=protocol, host=host, port=port)
-    transmitter_thread = threading.Thread(target=transmitter.start, args=[NMEA_FILEPATH])
-    transmitter_thread.daemon = True
-    transmitter_thread.start()
-
-    # Client that receives some data.
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-    sock.settimeout(60)
-    sock.connect((host, port))
-    sock.recv(16)
-    sock.close()
-
+def test_run():
+    transmitter, thread = transmitters.run(thread=True, filepath=EMPTY_FILEPATH)
     transmitter.shutdown()
-    transmitter_thread.join()
-
-    # TODO: perform some checks after run.
+    thread.join()
 
 
 def test_run_not_implemented_error():
-    transmitters.run(protocol="invalid", filepath="mock")
+    transmitters.run(
+        protocol="invalid",
+        filepath="asd"
+    )

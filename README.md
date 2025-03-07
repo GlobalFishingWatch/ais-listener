@@ -29,24 +29,13 @@ A service that receives messages through network sockets and publish them to des
 
 The original motivation for this service
 was the ingestion of AIS messages needed by GFW data pipelines.
-We have generalized this functionality for any desired data sources and destinations.
-
-The service can run in different modes,
-depending on the network protocol used
-and the implementation (server-like or client-like).
-In every case we call these objects **_receivers_** or **_listeners_**.
+We have generalized this functionality for any desired network protocols,
+data sources and destinations.
 
 </div>
 
-Currently, the following receivers/listeners are supported:
-<div align="center">
-
-| Class | Description |
-| --- | --- |
-| **UDPSocketReceiver** | UDP server that listens on a socket and accepts clients requests asynchronously. |
-| **ClientTCPSocketReceiver** | TCP client that connects to a socket server and continuously requests new data. |
-
-</div>
+> [!NOTE]
+> Currently, only **UDP** protocol is supported.
 
 ## Usage
 
@@ -82,71 +71,49 @@ make gcp
 
 ```shell
 (.venv) $ socket-listener receiver -h
-usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c  ] [--no-rich-logging] [--project  ] [--protocol  ] [--host  ] [--port  ] [--max-packet-size  ] [--max-retries  ]
-                                          [--init-retry-delay  ]
+usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c ] [--no-rich-logging] [--project ] [--protocol ] [--host ] [--port ] [--thread] [--max-packet-size ]
 
 options:
-  -h, --help            show this help message and exit
-  -v, --verbose         Set logger level to DEBUG.
-  -c, --config-file     Path to config file. If passed, rest of CLI args are ignored (default: None).
-  --no-rich-logging     Disable rich logging [useful for production environments].
-  --project             GCP project id (default: world-fishing-827).
-  --protocol            Network protocol to use. One of [UDP, TCP] (default: UDP).
-  --host                IP to use (as server) or to connect to (as client) (default: localhost).
-  --port                Port to use (as server) or to connect to (as client) (default: 10110).
-  --max-packet-size     Max. size in bytes for the internal buffer [for clients] (default: 4096).
-  --max-retries         Max. retries if a connection fails [for clients] (default: inf).
-  --init-retry-delay    Initial retry delay when a connection fails [for clients] (default: 1).
+  -h, --help             show this help message and exit
+  -v, --verbose          Set logger level to DEBUG.
+  -c  , --config-file    Path to config file. If passed, rest of CLI args are ignored (default: None).
+  --no-rich-logging      Disable rich logging [useful for production environments].
+  --project              GCP project id (default: world-fishing-827).
+  --protocol             Network protocol to use (default: UDP).
+  --host                 IP to use (default: localhost).
+  --port                 Port to use (default: 10110).
+  --thread               Run main process in a separate thread [Useful for testing].
+  --max-packet-size      The maximum amount of data to be received at once (default: 4096).
 ```
 
 Examples:
 ```shell
-socket-listener receiver --protocol TCP_client --host 153.44.253.27 --port 5631
-```
-
-```shell
-socket-listener receiver --protocol UDP
-```
-
-```shell
-socket-listener receiver -c config/TCP-client-kystverket.yaml
+socket-listener receiver --protocol UDP --port 10112 --max-packet-size 2048
 ```
 
 Example of configuration file:
 ```yaml
-source_name: 'kystverket'
-protocol: TCP_client
-host: 153.44.253.27
-port: 5631
+source_name: 'ais-listener'
+protocol: UDP
+port: 10110
 max_packet_size: 4096
-max_retries: .inf
-max_retry_delay: 60
-init_retry_delay: 1
+thread: False
 ```
 
 #### Running within docker
 
 To run in docker:
 ```shell
-docker compose run --rm receiver --protocol TCP_client --host 153.44.253.27 --port 5631
-```
-
-```shell
-docker compose run --rm receiver -c config/TCP-client-kystverket.yaml
+docker compose run --rm receiver -c config/UDP-ais.yaml
 ```
 
 ## Development
 
-A pair of _**transmitters**_ are provided that can be used for testing.
+A socket _**transmitter**_ object exists that can be used for testing.
 
-To send test messages via UDP (client-like) use
+To send test messages via UDP use
 ```shell
-socket-listener transmitter --protocol=UDP --port [PORT_TO_LISTEN]
-```
-
-To send messages via TCP (server-like), use
-```shell
-socket-listener transmitter --protocol=TCP --port [PORT_TO_CONNECT]
+socket-listener transmitter --protocol=UDP --port [PORT_TO_CONNECT]
 ```
 
 ### Updating dependencies

@@ -1,9 +1,9 @@
 [run]
 branch = True
 
-# concurrency = multiprocessing,thread
-parallel = true
-sigterm = true
+# concurrency = thread
+# parallel = true
+# sigterm = true
 
 [report]
 include_namespace_packages = true

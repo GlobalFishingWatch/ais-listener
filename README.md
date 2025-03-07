@@ -36,9 +36,15 @@ depending on the network protocol used
 and the implementation (server-like or client-like).
 In every case we call these objects **_receivers_** or **_listeners_**.
 
+</div>
+
 Currently, the following receivers/listeners are supported:
-- UDPSocketReceiver: UDP server that listens on a socket and accepts clients requests asynchronously.
-- ClientTCPSocketReceiver: TCP client that connects to a socket server and continuously requests new data.
+<div align="center">
+
+| Class | Description |
+| --- | --- |
+| **UDPSocketReceiver** | UDP server that listens on a socket and accepts clients requests asynchronously. |
+| **ClientTCPSocketReceiver** | TCP client that connects to a socket server and continuously requests new data. |
 
 </div>
 

@@ -1,28 +1,22 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: gcr.io/cloud-builders/docker
+    id: build
     args:
-      [
-        'build',
-        '--build-arg=COMMIT=$COMMIT_SHA',
-        '--build-arg=REPO=$REPO_NAME',
-        '--build-arg=BRANCH=$BRANCH_NAME',
-        '--build-arg=TAG=$TAG_NAME',
-        '-t',
-        '${_BASE_IMAGE_NAME}:$COMMIT_SHA',
-        '-t',
-        '${_BASE_IMAGE_NAME}:$TAG_NAME',
-        '-t',
-        '${_BASE_IMAGE_NAME}:latest',
-        '.',
-      ]
-
+      - build
+      - '-t'
+      - '${_IMAGE_NAME}:${TAG_NAME}'
+      - '-t'
+      - '${_IMAGE_NAME}:latest'
+      - '-f'
+      - Dockerfile
+      - '--target'
+      - prod
+      - .
 images:
-  - '${_BASE_IMAGE_NAME}:${TAG_NAME}'
-  - '${_BASE_IMAGE_NAME}:${COMMIT_SHA}'
-  - '${_BASE_IMAGE_NAME}:latest'
-
-timeout: 900s
+  - '${_IMAGE_NAME}:${TAG_NAME}'
+  - '${_IMAGE_NAME}:latest'
+timeout: 600s
 substitutions:
-  _BASE_IMAGE_NAME: 'gcr.io/${PROJECT_ID}/github.com/globalfishingwatch/${REPO_NAME}/${BRANCH_NAME}'
+  _IMAGE_NAME: 'gcr.io/${PROJECT_ID}/github.com/globalfishingwatch/${REPO_NAME}'
 options:
   dynamic_substitutions: true

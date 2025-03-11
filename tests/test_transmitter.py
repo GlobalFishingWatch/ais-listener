@@ -71,7 +71,7 @@ def test_client_transmitter(protocol, filepath):
 
 
 def test_run():
-    transmitter, thread = transmitters.run(thread=True, filepath=EMPTY_FILEPATH)
+    transmitter, thread = transmitters.run(daemon_thread=True, filepath=EMPTY_FILEPATH)
     transmitter.shutdown()
     thread.join()
 

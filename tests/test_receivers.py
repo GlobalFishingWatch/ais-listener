@@ -1,10 +1,12 @@
 import time
 import socket
 import threading
+from unittest import mock
 
 import pytest
 
 from socket_listener import receivers
+from socket_listener.sinks import GooglePubSub
 
 
 @pytest.mark.parametrize("protocol", ["UDP"])
@@ -29,6 +31,16 @@ def test_server_receiver(protocol):
     receiver_thread.join()
 
     # TODO: perform some checks after run.
+
+
+def test_run(monkeypatch):
+    sink_mock = mock.Mock(spec=GooglePubSub)
+    sink_mock.name = "google_pubsub"
+
+    monkeypatch.setattr(receivers, "create_sink", lambda *x, **y: sink_mock)
+    rec, thread = receivers.run(daemon_thread=True, enable_pubsub=True)
+    rec.shutdown()
+    thread.join()
 
 
 def test_run_not_implemented_error():

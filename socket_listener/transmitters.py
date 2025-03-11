@@ -5,30 +5,39 @@ import socket
 import logging
 import threading
 
-from typing import Generator
+from typing import Generator, Iterable
 from abc import ABC, abstractmethod
 from functools import cached_property
-from itertools import islice, batched
+from itertools import islice
+
+from .utils import chunked_it
 
 logger = logging.getLogger(__name__)
 
 
-def run(filepath, *args, thread=False, **kwargs):
+def run(filepath, *args, daemon_thread=False, **kwargs):
+    """Runs a socket transmitter service inside a separate thread.
+
+    Args:
+        filepath: the path to the file containing the data to be sent.
+        *args: Positional arguments for socket transmitter constructor.
+        daemon_thread: If true, makes the thread daemonic.
+        **kwargs: Keyword arguments for socket transmitter constructor.
+
+    Returns:
+        A tuple (transmitter, thread).
+    """
     try:
         transmitter = create(*args, **kwargs)
     except NotImplementedError as e:
         logger.error(e)
         return
 
-    if thread:
-        thread = threading.Thread(target=transmitter.start, args=[filepath])
-        thread.daemon = True
-        thread.start()
+    thread = threading.Thread(target=transmitter.start, args=[filepath])
+    thread.daemon = daemon_thread
+    thread.start()
 
-        return transmitter, thread
-
-    transmitter.start(filepath)
-    return transmitter, None
+    return transmitter, thread
 
 
 def create(protocol="UDP", **kwargs):
@@ -101,7 +110,7 @@ class UDPSocketTransmitter(SocketTransmitter):
         )
 
         messages = islice(self._read_messages(path), 0, self._first_n)
-        chunks = batched(messages, self._chunk_size)
+        chunks = chunked_it(messages, self._chunk_size)
 
         for chunk in chunks:
             self._send_messages(chunk)
@@ -114,15 +123,16 @@ class UDPSocketTransmitter(SocketTransmitter):
             for line in f:
                 yield line.strip()
 
-    def _send_messages(self, messages: list[bytes]):
-        data = "\n".join(messages).encode("utf-8")
+    def _send_messages(self, messages: Iterable[bytes]):
+        messages_lst = list(messages)
+        data = "\n".join(messages_lst).encode("utf-8")
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect((self._host, self._port))
         sock.send(data)
         sock.close()
 
-        logger.info(f"Finished sending {len(messages)} messages to {self.address}.")
+        logger.info(f"Finished sending {len(messages_lst)} messages to {self.address}.")
         logger.debug(f"Data sent: {data}")
         time.sleep(self._delay)
 

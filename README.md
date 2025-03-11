@@ -71,19 +71,24 @@ make gcp
 
 ```shell
 (.venv) $ socket-listener receiver -h
-usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c ] [--no-rich-logging] [--project ] [--protocol ] [--host ] [--port ] [--thread] [--max-packet-size ]
+usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c ] [--no-rich-logging] [--protocol ] [--host ] [--port ] [--daemon-thread] [--max-packet-size ] [--enable-pubsub] [--project-id ]
+                                          [--topic-id ]
 
 options:
   -h, --help             show this help message and exit
   -v, --verbose          Set logger level to DEBUG.
   -c  , --config-file    Path to config file. If passed, rest of CLI args are ignored (default: None).
   --no-rich-logging      Disable rich logging [useful for production environments].
-  --project              GCP project id (default: world-fishing-827).
   --protocol             Network protocol to use (default: UDP).
-  --host                 IP to use (default: localhost).
+  --host                 IP to use (default: 0.0.0.0).
   --port                 Port to use (default: 10110).
-  --thread               Run main process in a separate thread [Useful for testing].
+  --daemon-thread        Run main process in a daemonic thread [Useful for testing].
   --max-packet-size      The maximum amount of data to be received at once (default: 4096).
+
+Google Pub/Sub sink:
+  --enable-pubsub        Enable publication to Google PubSub service.
+  --project-id           GCP project id (default: world-fishing-827).
+  --topic-id             Google Pub/Sub topic id (default: NMEA).
 ```
 
 Examples:
@@ -97,7 +102,7 @@ source_name: 'ais-listener'
 protocol: UDP
 port: 10110
 max_packet_size: 4096
-thread: False
+daemon_thread: False
 ```
 
 #### Running within docker
@@ -135,22 +140,7 @@ If you want to upgrade all dependencies to latest available versions
 make upgrade-reqs
 ```
 
-### Docker utils
+### How to deploy
 
-For convenience, there are some shell scripts for building and running using `docker compose`:
-+ `build.sh`: This will run `docker compose build` and pass in some extra info on the current git commit.
-+ `cloud-build.sh`: This will do a manual cloud build and publish the docker container to the cloud registry.
-
-### Build and Deploy
-
-This tool is designed to be run in a GCE instance as a docker image.   
-
-Pushing a commit to the main branch will automatically trigger a cloud build. 
-You can use `cloud-build.sh` to manually trigger a build. 
-
-Then you have to deploy the docker container in a GCP instance,
-configure command line parameters,
-assign an external IP, 
-and open the UDP ports in the firewall.  
-
-You can use the client app to test.
+Pushing a commit to the master or dev branches
+will automatically trigger a Google Cloud build and the docker image will be published.

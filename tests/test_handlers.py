@@ -1,8 +1,24 @@
-from socket_listener.handlers import PacketHandler
-from socket_listener.packet import Packet
+from unittest import mock
+
+from socket_listener.handlers import UDPRequestHandler
+from socket_listener.sinks import GooglePubSub
 
 
-def test_empty_packet():
-    ph = PacketHandler()
-    p1 = Packet(b"")
-    ph.handle_packet(p1)
+class ServerMock:
+    source_name = "Unknown"
+    sinks = []
+
+
+def test_handle():
+    data = b"This is the data."
+    socket = None
+    host = "123.99.100.80"
+    port = 10110
+
+    request = (data, socket)
+    address = (host, port)
+
+    server = ServerMock()
+    server.sinks = [mock.Mock(spec=GooglePubSub)]
+    handler = UDPRequestHandler(request, address, server)
+    handler.handle()

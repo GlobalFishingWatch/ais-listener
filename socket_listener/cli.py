@@ -37,6 +37,8 @@ HELP_MAX_PACKET_SIZE = f"The maximum amount of data to be received at once {HELP
 HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for testing]."
 HELP_FILEPATH = f"Path to the file containing the data to send {HELP_DEFAULT}."
 HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
+HELP_CHUNK_SIZE = f"Amount of messages to be sent in a single packet {HELP_DEFAULT}."
+HELP_FIRST_N = f"Only send the first n messages of the file and then stop. {HELP_DEFAULT}."
 
 DEFAULT_FILEPATH = "sample/nmea.txt"
 DEFAULT_PROJECT = "world-fishing-827"
@@ -89,8 +91,10 @@ def define_parser():
 
     p.set_defaults(func=transmitters.run)
     add = p.add_argument
-    add("--delay", type=float, default=1, metavar=" ", help=HELP_DELAY)
-    add("--filepath", type=str, default=DEFAULT_FILEPATH, metavar=" ", help=HELP_FILEPATH)
+    add("--chunk-size", type=int, default=50, metavar=" ", help=HELP_CHUNK_SIZE)
+    add("-n", "--first-n", type=int, default=None, metavar=" ", help=HELP_FIRST_N)
+    add("-d", "--delay", type=float, default=1, metavar=" ", help=HELP_DELAY)
+    add("-f", "--filepath", type=str, default=DEFAULT_FILEPATH, metavar=" ", help=HELP_FILEPATH)
 
     return parser
 

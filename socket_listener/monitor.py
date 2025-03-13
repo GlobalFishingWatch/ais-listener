@@ -1,3 +1,4 @@
+"""Module with monitoring utilities."""
 import time
 import logging
 import threading
@@ -22,7 +23,7 @@ class ThreadMonitor(threading.Thread):
         self._is_done = True
 
     def run(self):
-        """Overrides parent class implementation."""
+        """Overrides parent class (threading.Thread) implementation."""
         while not self._is_done:
             time.sleep(self._delay)
             logger.info(f"Number of active threads: {threading.active_count()}")

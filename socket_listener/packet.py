@@ -1,68 +1,67 @@
-"""A class to represent a socket packet."""
+"""Module with class to represent an incoming socket packet."""
 import logging
-import threading
+from typing import Generator
 
 from datetime import datetime, timezone
-from dataclasses import dataclass
 from functools import cached_property
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class Packet:
-    """Represents a received socket packet."""
+    """Represents an incoming socket packet.
 
+    Attributes:
+        time: datetime of the packet reception.
+
+    Args:
+        data: Data contained in the packet.
+        protocol: Network protocol used.
+        source_host: IP of the source.
+        source_name: Name of the source.
+        delimiter: Delimiter to use when splitting packet data into messages.
+    """
     data: bytes
-    source: str = "Unknown"
     protocol: str = None
-    host: str = None
-    port: int = None
+    source_host: tuple = None
+    source_name: str = "Unknown"
+    delimiter: str = "\n"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.time = datetime.now(tz=timezone.utc)
 
     @cached_property
-    def address(self) -> str:
-        """Unified string version of the host and port properties."""
-        return f"{self.host}:{self.port}"
-
-    @cached_property
-    def decoded_data(self):
-        """Returns decoded and stripped data."""
-        return self.data.decode("utf-8").strip()
-
-    @cached_property
-    def messages(self, delimiter: str = "\n"):
-        """Returns messages contained in the packet
-        delimited by the provided delimiter, as a list of strings."""
-
-        return list(line.strip() for line in self.decoded_data.split(delimiter) if line)
-
-    @cached_property
-    def size(self):
-        """Returns the amount of messages contained in the packet."""
-        return len(self.messages)
-
-    @cached_property
-    def empty(self):
+    def empty(self) -> bool:
         """Returns whether or not the packet is empty."""
         return not self.data
 
-    def log(self):
-        """Logs the amount of messages and each message at DEBUG level."""
-        logger.debug(
-            "Received {} messages from {} in {}."
-            .format(self.size, self.host, threading.current_thread().name))
+    @cached_property
+    def messages_list(self) -> list:
+        """Returns list of messages contained in the packet."""
+        return list(self.messages)
 
-        self.log_messages()
+    @cached_property
+    def metadata(self) -> dict:
+        """Returns a dictionary with packet metadata."""
+        return dict(
+            protocol=self.protocol,
+            source_host=self.source_host,
+            source_name=self.source_name,
+            time=self.time.isoformat(),
+        )
 
-    def log_messages(self):
-        """Logs each received message at DEBUG level."""
-        for message in self.messages:
-            logger.debug(message)
+    @cached_property
+    def size(self) -> int:
+        """Returns amount of messages contained in the packet."""
+        return sum(1 for x in self.messages)
 
-    def publish(self, sinks: list) -> None:
-        """Publish received packets to provided sinks."""
-        for sink in sinks:
-            sink.publish(self)
+    @property
+    def messages(self) -> Generator:
+        """Returns generator of messages contained in the packet."""
+        return (
+            line.strip()
+            for line in self.data.decode("utf-8").strip().split(self.delimiter)
+            if line
+        )

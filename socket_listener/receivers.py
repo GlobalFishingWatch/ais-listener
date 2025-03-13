@@ -1,4 +1,4 @@
-"""Classes for continuous socket data reception and persistence.
+"""Classes for continuous socket data reception and publication.
 
 This module provides a base class for "receiver" objects and also concrete implementations.
 These objects support the continuous data reception from network sockets and publication
@@ -13,8 +13,8 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 
 from .handlers import UDPRequestHandler
+from .monitor import ThreadMonitor
 from .sinks import create_sink
-from .thread_monitor import ThreadMonitor
 
 
 logger = logging.getLogger(__name__)
@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 def run(
     *args,
-    enable_pubsub: bool = False,
-    project_id: str = None,
-    topic_id: str = None,
+    pubsub: bool = False,
+    pubsub_project: str = None,
+    pubsub_topic: str = None,
     daemon_thread: bool = False,
     **kwargs,
 ):
@@ -32,9 +32,9 @@ def run(
 
     Args:
         *args: Positional arguments for socket receiver constructor.
-        enable_pubsub: Enables publication to Google Pub/Sub service.
-        project_id: GCP project id.
-        topic_id: Google Pub/Sub topic id.
+        pubsub: Enables publication to Google Pub/Sub service.
+        pubsub_project: GCP project id for Pub/Sub integration.
+        pubsub_topic_id: Topic id for Pub/Sub integration.
         daemon_thread: If true, makes the thread daemonic.
         **kwargs: Keyword arguments for socket receiver constructor.
 
@@ -42,8 +42,8 @@ def run(
         A tuple (receiver, thread).
     """
     sinks = []
-    if enable_pubsub:
-        sinks.append(dict(name="google_pubsub", project_id=project_id, topic_id=topic_id))
+    if pubsub:
+        sinks.append(dict(name="google_pubsub", project_id=pubsub_project, topic_id=pubsub_topic))
 
     try:
         receiver = create(*args, **kwargs, sinks=sinks)
@@ -89,13 +89,15 @@ class SocketReceiver(ABC):
         source_name: str = "Unknown",
         max_packet_size: int = 4096,
         sinks: list = None,
-        monitor_delay: int = 2
+        monitor_delay: int = 2,
+        delimiter: str = "\n"
     ) -> None:
         self._host = host
         self._port = port
         self._source_name = source_name
         self._max_packet_size = max_packet_size
         self._sinks = sinks
+        self._delimiter = delimiter
 
         self._thread_monitor = ThreadMonitor(delay=monitor_delay)
 
@@ -140,6 +142,11 @@ class UDPSocketReceiver(SocketReceiver):
         self._server.max_packet_size = self._max_packet_size
         self._server.source_name = self._source_name
         self._server.sinks = self._sinks
+        self._server.delimiter = self._delimiter
+
+    @property
+    def server(self):
+        return self._server
 
     def start(self) -> None:
         logger.info(f"Listening {self.protocol} socket on {self.address}...")

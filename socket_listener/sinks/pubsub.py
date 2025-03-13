@@ -2,6 +2,8 @@
 import logging
 from google.cloud import pubsub_v1
 
+from functools import cached_property
+
 from socket_listener.sinks.base import Sink
 from socket_listener.packet import Packet
 
@@ -23,18 +25,16 @@ class GooglePubSub(Sink):
 
         self._publisher = pubsub_v1.PublisherClient()
 
-    def publish(self, packet: Packet) -> None:
-        topic_path = self._publisher.topic_path(self._project_id, self._topic_id)
+    @cached_property
+    def path(self):
+        return self._publisher.topic_path(self._project_id, self._topic_id)
 
+    def publish(self, packet: Packet) -> None:
         for message in packet.messages:
             future = self._publisher.publish(
-                topic_path,
+                self.path,
                 message.encode("utf-8"),
-                protocol=packet.protocol,
-                address=packet.address,
-                timestamp=packet.time.isoformat(),
-                source=packet.source
+                **packet.metadata
             )
-            logger.debug(future.result())
 
-        logger.debug(f"Published {len(packet.messages)} messages to Pub/Sub: {topic_path}.")
+            logger.debug(f"Pub/Sub future result: {future.result()}")

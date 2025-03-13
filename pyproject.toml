@@ -3,16 +3,17 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["ais_listener"]
+packages = ["socket_listener"]
 
 [project]
-name = "ais-listener"
+name = "socket-listener"
 version = "0.1.0"
-description = "A TCP/UDP service that receives NMEA-encoded AIS messages and writes them to sharded files in GCS'."
+description = "A service that receives messages through network sockets and publish them to desired destinations."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
     { name = "Paul Woods.", email = "paul@globalfishingwatch.org"},
+    { name = "Tomás J. Link", email = "tomas.link@globalfishingwatch.org" },
 ]
 maintainers = [
     { name = "Paul Woods.", email = "paul@globalfishingwatch.org"},
@@ -35,7 +36,7 @@ dependencies = [
 ]
 
 [project.scripts]
-ais-listener = "ais_listener.cli:main"
+socket-listener = "socket_listener.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/GlobalFishingWatch/ais-listener"

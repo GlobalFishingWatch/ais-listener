@@ -1,4 +1,4 @@
-<h1 align="center" style="border-bottom: none;"> AIS Listener </h1>
+<h1 align="center" style="border-bottom: none;"> Socket Listener </h1>
 
 <p align="center">
   <a href="https://codecov.io/gh/GlobalFishingWatch/ais-listener" > 
@@ -15,10 +15,11 @@
   </a>
 </p>
 
-A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them to GCS.
+A service that receives messages through network sockets and publish them to desired destinations.
 
-[requirements.txt]: requirements.txt
+[pip-tools]: https://pip-tools.readthedocs.io/en/stable/
 [pyproject.toml]: pyproject.toml
+[requirements.txt]: requirements.txt
 [sample/sources.yaml]: sample/sources.yaml
 [sample/nmea.txt]: sample/nmea.txt
 
@@ -26,11 +27,15 @@ A service that receives NMEA-encoded AIS messages via UDP or TCP and writes them
 
 <div align="justify">
 
-This is a dockerized micro service that provides UDP and TCP services.
-The UDP service will listen on multiple ports for NMEA messages data streams.
-The TCP service will connect to a designated host and then read messages.
+The original motivation for this service
+was the ingestion of AIS messages needed by GFW data pipelines.
+We have generalized this functionality for any desired network protocols,
+data sources and destinations.
 
 </div>
+
+> [!NOTE]
+> Currently, only **UDP** protocol is supported.
 
 ## Usage
 
@@ -65,49 +70,53 @@ make gcp
 ### Using the CLI
 
 ```shell
-(.venv) $ ais-listener receiver -h
-usage: AIS Listener (v0.1.0). receiver [-h] [--buffer-size  ] [--config_file  ]
+(.venv) $ socket-listener receiver -h
+usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c ] [--no-rich-logging] [--project ] [--protocol ] [--host ] [--port ] [--thread] [--max-packet-size ]
 
 options:
-  -h, --help       show this help message and exit
-  --buffer-size    Size in bytes for the internal buffer (default: 4096).
-  --config_file    File to read to get mapping of listening ports to source names (default: sample/sources.yaml).
+  -h, --help             show this help message and exit
+  -v, --verbose          Set logger level to DEBUG.
+  -c  , --config-file    Path to config file. If passed, rest of CLI args are ignored (default: None).
+  --no-rich-logging      Disable rich logging [useful for production environments].
+  --project              GCP project id (default: world-fishing-827).
+  --protocol             Network protocol to use (default: UDP).
+  --host                 IP to use (default: localhost).
+  --port                 Port to use (default: 10110).
+  --thread               Run main process in a separate thread [Useful for testing].
+  --max-packet-size      The maximum amount of data to be received at once (default: 4096).
 ```
 
-The service will receive files for each source in sources.
-For UDP, the service will listen on the designated port,
-and for TCP the service will connect to the designated host and port.
+Examples:
+```shell
+socket-listener receiver --protocol UDP --port 10112 --max-packet-size 2048
+```
 
-There is also a par of transmitters that can be used for testing.  
+Example of configuration file:
+```yaml
+source_name: 'ais-listener'
+protocol: UDP
+port: 10110
+max_packet_size: 4096
+thread: False
+```
+
+#### Running within docker
+
+To run in docker:
+```shell
+docker compose run --rm receiver -c config/UDP-ais.yaml
+```
+
+## Development
+
+A socket _**transmitter**_ object exists that can be used for testing.
 
 To send test messages via UDP use
 ```shell
-ais-listener -v transmitter \
-  --protocol=UDP \
-  --port=[PORT_TO_LISTEN] 
+socket-listener transmitter --protocol=UDP --port [PORT_TO_CONNECT]
 ```
 
-To send messages via TCP, use
-```shell
-ais-listener -v transmitter \
-  --protocol=TCP \
-  --port [PORT_TO_CONNECT]
-```
-
-Running this will read values from [sample/nmea.txt] by default.
-
-You can run the receiver and the transmitter locally and the transmitter should send messages to the receiver.   
-Use `-v` for verbose output and both transmitter and receiver should print every message to the console.
-
-
-### Running within docker
-
-To run in docker, displaying the server's command line parameters 
-```shell
-docker compose run --rm server --help
-```
-
-## Updating dependencies
+### Updating dependencies
 
 The [requirements.txt] contains all transitive dependencies pinned to specific versions.
 This file is compiled automatically with [pip-tools], based on [pyproject.toml].
@@ -132,7 +141,7 @@ For convenience, there are some shell scripts for building and running using `do
 + `build.sh`: This will run `docker compose build` and pass in some extra info on the current git commit.
 + `cloud-build.sh`: This will do a manual cloud build and publish the docker container to the cloud registry.
 
-## Build and Deploy
+### Build and Deploy
 
 This tool is designed to be run in a GCE instance as a docker image.   
 

@@ -1,3 +1,4 @@
+"""Logger utitlities."""
 import logging
 
 from rich.logging import RichHandler
@@ -8,7 +9,7 @@ _DEFAULT_LOG_FORMAT = f"{_TIME_ENTRY}%(name)s - %(message)s"
 
 
 def setup_logger(
-    level: str = logging.INFO,
+    verbose: bool = False,
     format_: str = _DEFAULT_LOG_FORMAT,
     warning_level: tuple = (),
     error_level: tuple = (),
@@ -23,6 +24,7 @@ def setup_logger(
         warning_level: list of packages/modules for which to set the log level as WARNING.
         error_level: list of packages/modules for which to set the log level as ERROR.
         force: If true, forces the root logger config replacing the one done on other places.
+        rich: Whether to use rich library to colorize console output.
     """
 
     handlers = []
@@ -32,6 +34,10 @@ def setup_logger(
         format_ = format_.replace(_TIME_ENTRY, "")
     else:
         handlers.append(logging.StreamHandler())
+
+    level = logging.INFO
+    if verbose:
+        level = logging.DEBUG
 
     logging.basicConfig(level=level, format=format_, handlers=handlers, force=force)
 

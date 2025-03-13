@@ -50,12 +50,15 @@ class Packet:
         return not self.data
 
     def log(self):
-        """Logs amount of received messages at INFO level and each message at DEBUG level."""
-        if self.size > 0:
-            logger.info(
-                "Received {} messages from {} in {}."
-                .format(self.size, self.host, threading.current_thread().name))
+        """Logs the amount of messages and each message at DEBUG level."""
+        logger.debug(
+            "Received {} messages from {} in {}."
+            .format(self.size, self.host, threading.current_thread().name))
 
+        self.log_messages()
+
+    def log_messages(self):
+        """Logs each received message at DEBUG level."""
         for message in self.messages:
             logger.debug(message)
 

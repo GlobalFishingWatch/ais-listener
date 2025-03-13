@@ -14,6 +14,8 @@ from functools import cached_property
 
 from .handlers import UDPRequestHandler
 from .sinks import create_sink
+from .thread_monitor import ThreadMonitor
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,13 +88,16 @@ class SocketReceiver(ABC):
         port: int = 10110,
         source_name: str = "Unknown",
         max_packet_size: int = 4096,
-        sinks: list = None
+        sinks: list = None,
+        monitor_delay: int = 2
     ) -> None:
         self._host = host
         self._port = port
         self._source_name = source_name
         self._max_packet_size = max_packet_size
         self._sinks = sinks
+
+        self._thread_monitor = ThreadMonitor(delay=monitor_delay)
 
     @classmethod
     def build(cls, sinks=(), *args, **kwargs) -> 'SocketReceiver':
@@ -138,9 +143,10 @@ class UDPSocketReceiver(SocketReceiver):
 
     def start(self) -> None:
         logger.info(f"Listening {self.protocol} socket on {self.address}...")
-
+        self._thread_monitor.start()
         with self._server:
             self._server.serve_forever(poll_interval=self._poll_interval)
 
     def shutdown(self):
         self._server.shutdown()
+        self._thread_monitor.stop()

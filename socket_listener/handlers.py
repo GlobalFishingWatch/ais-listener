@@ -19,5 +19,5 @@ class UDPRequestHandler(socketserver.BaseRequestHandler):
         data, _ = self.request
         host, port = self.client_address
         packet = Packet(data, self.server.source_name, self.protocol, host, port)
-        packet.log()
         packet.publish(sinks=self.server.sinks)
+        packet.log()

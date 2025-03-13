@@ -35,6 +35,6 @@ class GooglePubSub(Sink):
                 timestamp=packet.time.isoformat(),
                 source=packet.source
             )
-            logger.info(future.result())
+            logger.debug(future.result())
 
-        logger.info(f"Published packet messages to {topic_path}.")
+        logger.debug(f"Published {len(packet.messages)} messages to Pub/Sub: {topic_path}.")

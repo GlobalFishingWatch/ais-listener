@@ -2,4 +2,4 @@ source_name: 'ais-listener'
 protocol: UDP
 port: 10110
 max_packet_size: 4096
-thread: True
+daemon_thread: True

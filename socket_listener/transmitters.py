@@ -5,29 +5,39 @@ import socket
 import logging
 import threading
 
-from typing import Generator
+from typing import Generator, Iterable
 from abc import ABC, abstractmethod
+from functools import cached_property
+from itertools import islice
 
+from .utils import chunked_it
 
 logger = logging.getLogger(__name__)
 
 
-def run(filepath, *args, thread=False, **kwargs):
+def run(filepath, *args, daemon_thread=False, **kwargs):
+    """Runs a socket transmitter service inside a separate thread.
+
+    Args:
+        filepath: the path to the file containing the data to be sent.
+        *args: Positional arguments for socket transmitter constructor.
+        daemon_thread: If true, makes the thread daemonic.
+        **kwargs: Keyword arguments for socket transmitter constructor.
+
+    Returns:
+        A tuple (transmitter, thread).
+    """
     try:
         transmitter = create(*args, **kwargs)
     except NotImplementedError as e:
         logger.error(e)
         return
 
-    if thread:
-        thread = threading.Thread(target=transmitter.start, args=[filepath])
-        thread.daemon = True
-        thread.start()
+    thread = threading.Thread(target=transmitter.start, args=[filepath])
+    thread.daemon = daemon_thread
+    thread.start()
 
-        return transmitter, thread
-
-    transmitter.start(filepath)
-    return transmitter, None
+    return transmitter, thread
 
 
 def create(protocol="UDP", **kwargs):
@@ -42,22 +52,42 @@ def create(protocol="UDP", **kwargs):
 
 
 class SocketTransmitter(ABC):
-    """Base class for socket data transmission."""
+    """Base class for socket data transmission.
+
+    Args:
+        host: IP to connect to.
+        port: Port to connect to.
+        delay: Delay in seconds between packet transmissions.
+        chunk_size: Amount of messages to be sent in a single packet.
+        first_n: If passed, only send this amount of messages of the file and then stop.
+    """
 
     def __init__(
-        self, host: str = "0.0.0.0", port: int = 10110, delay: float = 1, max_chunk_size: int = 50
+        self,
+        host: str = "0.0.0.0",
+        port: int = 10110,
+        delay: float = 1,
+        chunk_size: int = 50,
+        first_n: int = None
     ):
         self._host = host
         self._port = port
         self._delay = delay
-        self._max_chunk_size = max_chunk_size
-
-        self._address = f"{self._host}:{self._port}"
-        self.__shutdown_request = False
+        self._chunk_size = chunk_size
+        self._first_n = first_n
 
     @abstractmethod
     def start(self, path: str):
-        """Starts the socket transmitter."""
+        """Starts the socket transmitter.
+
+        Args:
+            path: Path to the file containing the data to be sent.
+        """
+
+    @cached_property
+    def address(self):
+        """Unified string version of the host and port properties."""
+        return f"{self._host}:{self._port}"
 
     @abstractmethod
     def shutdown(self):
@@ -74,39 +104,35 @@ class UDPSocketTransmitter(SocketTransmitter):
 
     def start(self, path: str) -> None:
         logger.info(
-            "Sending a maximum of {} messages using UDP to {} every {} seconds".format(
-                self._max_chunk_size, self._address, self._delay
+            "Sending chunks of {} messages using UDP to {} every {} seconds".format(
+                self._chunk_size, self.address, self._delay
             )
         )
 
-        messages = self._read_messages(path)
+        messages = islice(self._read_messages(path), 0, self._first_n)
+        chunks = chunked_it(messages, self._chunk_size)
 
-        while not self.__shutdown_request:
-            chunk = []
-            for m in messages:
-                chunk.append(m)
-                if self.__shutdown_request:
-                    break
-
-                if len(chunk) >= self._max_chunk_size:
-                    self._send_messages(chunk)
-                    chunk = []
+        for chunk in chunks:
+            self._send_messages(chunk)
+            if self.__shutdown_request:
+                break
 
     def _read_messages(self, path) -> Generator:
         logger.info(f"Reading messages from {path}.")
         with open(path, "r") as f:
             for line in f:
-                yield line.strip().encode("utf-8")
+                yield line.strip()
 
-    def _send_messages(self, messages: list[bytes]):
-        data = b"\n".join(messages)
+    def _send_messages(self, messages: Iterable[bytes]):
+        messages_lst = list(messages)
+        data = "\n".join(messages_lst).encode("utf-8")
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect((self._host, self._port))
         sock.send(data)
         sock.close()
 
-        logger.info(f"Finished sending {len(messages)} messages to {self._address}.")
+        logger.info(f"Finished sending {len(messages_lst)} messages to {self.address}.")
         logger.debug(f"Data sent: {data}")
         time.sleep(self._delay)
 

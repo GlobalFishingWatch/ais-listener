@@ -5,7 +5,7 @@ from socket_listener import cli
 
 def _run_cli_in_thread(*args):
     obj, thread = cli.cli(
-        list(args) + ["--thread"]
+        list(args) + ["--daemon-thread"]
     )
     obj.shutdown()
     thread.join()

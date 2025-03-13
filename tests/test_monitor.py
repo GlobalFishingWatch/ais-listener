@@ -1,6 +1,6 @@
 import time
 
-from socket_listener.thread_monitor import ThreadMonitor
+from socket_listener.monitor import ThreadMonitor
 
 
 def test_run():

@@ -38,7 +38,7 @@ def test_run(monkeypatch):
     sink_mock.name = "google_pubsub"
 
     monkeypatch.setattr(receivers, "create_sink", lambda *x, **y: sink_mock)
-    rec, thread = receivers.run(daemon_thread=True, enable_pubsub=True)
+    rec, thread = receivers.run(daemon_thread=True, pubsub=True)
     rec.shutdown()
     thread.join()
 

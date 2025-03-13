@@ -11,7 +11,7 @@ class UDPTestHandler(socketserver.BaseRequestHandler):
         socket.sendto(data.upper(), self.client_address)
 
 
-disable_loggers = ['socket_listener.thread_monitor']
+disable_loggers = ['socket_listener.monitor']
 
 
 def pytest_configure():

@@ -71,8 +71,8 @@ make gcp
 
 ```shell
 (.venv) $ socket-listener receiver -h
-usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c ] [--no-rich-logging] [--protocol ] [--host ] [--port ] [--daemon-thread] [--max-packet-size ] [--enable-pubsub] [--project-id ]
-                                          [--topic-id ]
+usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c ] [--no-rich-logging] [--protocol ] [--host ] [--port ] [--daemon-thread] [--max-packet-size ] [--delimiter ] [--pubsub]
+                                          [--pubsub-project ] [--pubsub-topic ]
 
 options:
   -h, --help             show this help message and exit
@@ -84,11 +84,12 @@ options:
   --port                 Port to use (default: 10110).
   --daemon-thread        Run main process in a daemonic thread [Useful for testing].
   --max-packet-size      The maximum amount of data to be received at once (default: 4096).
+  --delimiter            Delimiter to use when splitting incoming packets into messages (default: '\n').
 
 Google Pub/Sub sink:
-  --enable-pubsub        Enable publication to Google PubSub service.
-  --project-id           GCP project id (default: world-fishing-827).
-  --topic-id             Google Pub/Sub topic id (default: NMEA).
+  --pubsub               Enable publication to Google PubSub service.
+  --pubsub-project       GCP project id (default: world-fishing-827).
+  --pubsub-topic         Google Pub/Sub topic id (default: NMEA).
 ```
 
 Examples:
@@ -103,6 +104,9 @@ protocol: UDP
 port: 10110
 max_packet_size: 4096
 daemon_thread: False
+pubsub: True
+pubsub_project: "world-fishing-927"
+pubsub_topic: "NMEA"
 ```
 
 #### Running within docker

@@ -28,13 +28,15 @@ HELP_PROTOCOL = f"Network protocol to use {HELP_DEFAULT}."
 HELP_PORT = f"Port to use {HELP_DEFAULT}."
 HELP_HOST = f"IP to use {HELP_DEFAULT}."
 HELP_DAEMON_THREAD = "Run main process in a daemonic thread [Useful for testing]."
+
 HELP_RECEIVER = "Receives data continuosly from network sockets."
 HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignored {HELP_DEFAULT}."
 HELP_MAX_PACKET_SIZE = f"The maximum amount of data to be received at once {HELP_DEFAULT}."
+HELP_DELIMITER = f"Delimiter to use when splitting incoming packets into messages {HELP_DEFAULT}."
 
 HELP_PUBSUB = "Enable publication to Google PubSub service."
-HELP_PROJECT_ID = f"GCP project id {HELP_DEFAULT}."
-HELP_TOPIC_ID = f"Google Pub/Sub topic id {HELP_DEFAULT}."
+HELP_PUB_PROJ = f"GCP project id {HELP_DEFAULT}."
+HELP_PUB_TOPIC = f"Google Pub/Sub topic id {HELP_DEFAULT}."
 
 HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for testing]."
 HELP_FILEPATH = f"Path to the file containing the data to send {HELP_DEFAULT}."
@@ -44,8 +46,9 @@ HELP_FIRST_N = f"Only send the first n messages of the file and then stop. {HELP
 
 DEFAULT_PROTOCOL = "UDP"
 DEFAULT_FILEPATH = "sample/nmea.txt"
-DEFAULT_PROJECT_ID = "world-fishing-827"
-DEFAULT_TOPIC_ID = "NMEA"
+DEFAULT_PUB_PROJ = "world-fishing-827"
+DEFAULT_PUB_TOPIC = "NMEA"
+DEFAULT_DELIMITER = "'\\n'"
 
 
 def formatter():
@@ -87,11 +90,12 @@ def define_parser():
     p.set_defaults(func=receivers.run)
     add = p.add_argument
     add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
+    add("--delimiter", type=str, default=DEFAULT_DELIMITER, metavar=" ", help=HELP_DELIMITER)
 
     add = p.add_argument_group("Google Pub/Sub sink").add_argument
-    add("--enable-pubsub", action="store_true", help=HELP_PUBSUB)
-    add("--project-id", type=str, default=DEFAULT_PROJECT_ID, metavar=" ", help=HELP_PROJECT_ID)
-    add("--topic-id", type=str, default=DEFAULT_TOPIC_ID, metavar=" ", help=HELP_TOPIC_ID)
+    add("--pubsub", action="store_true", help=HELP_PUBSUB)
+    add("--pubsub-project", type=str, default=DEFAULT_PUB_PROJ, metavar=" ", help=HELP_PUB_PROJ)
+    add("--pubsub-topic", type=str, default=DEFAULT_PUB_TOPIC, metavar=" ", help=HELP_PUB_TOPIC)
 
     p = subparsers.add_parser(
         "transmitter", formatter_class=formatter(), parents=[common], help=HELP_TRANSMITTER)

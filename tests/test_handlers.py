@@ -1,24 +1,15 @@
 from unittest import mock
 
+from socket_listener.receivers import UDPSocketReceiver
 from socket_listener.handlers import UDPRequestHandler
 from socket_listener.sinks import GooglePubSub
 
 
-class ServerMock:
-    source_name = "Unknown"
-    sinks = []
-
-
 def test_handle():
-    data = b"This is the data."
-    socket = None
-    host = "123.99.100.80"
-    port = 10110
-
+    data, socket = b"This is the data.", None
     request = (data, socket)
-    address = (host, port)
+    address = ("123.99.100.80", 10110)
 
-    server = ServerMock()
-    server.sinks = [mock.Mock(spec=GooglePubSub)]
-    handler = UDPRequestHandler(request, address, server)
+    receiver_mock = UDPSocketReceiver(sinks=[mock.Mock(spec=GooglePubSub)])
+    handler = UDPRequestHandler(request, address, receiver_mock.server)
     handler.handle()

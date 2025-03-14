@@ -2,6 +2,7 @@
 import sys
 import logging
 import argparse
+from collections import ChainMap
 
 from socket_listener import receivers
 from socket_listener import transmitters
@@ -33,6 +34,7 @@ HELP_RECEIVER = "Receives data continuosly from network sockets."
 HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignored {HELP_DEFAULT}."
 HELP_MAX_PACKET_SIZE = f"The maximum amount of data to be received at once {HELP_DEFAULT}."
 HELP_DELIMITER = f"Delimiter to use when splitting incoming packets into messages {HELP_DEFAULT}."
+HELP_IP_CLIENT_MAPPING_FILE = f"Path to (IP -> client_name) mappings {HELP_DEFAULT}."
 
 HELP_PUBSUB = "Enable publication to Google PubSub service."
 HELP_PUB_PROJ = f"GCP project id {HELP_DEFAULT}."
@@ -48,7 +50,7 @@ DEFAULT_PROTOCOL = "UDP"
 DEFAULT_FILEPATH = "sample/nmea.txt"
 DEFAULT_PUB_PROJ = "world-fishing-827"
 DEFAULT_PUB_TOPIC = "NMEA"
-DEFAULT_DELIMITER = "'\\n'"
+DEFAULT_DELIMITER = "\n"
 
 
 def formatter():
@@ -58,6 +60,21 @@ def formatter():
         return argparse.RawTextHelpFormatter(prog, max_help_position=50)
 
     return formatter
+
+
+def defaults():
+    return {
+        "protocol": DEFAULT_PROTOCOL,
+        "host": "0.0.0.0",
+        "port": 10110,
+        "daemon_thread": False,
+        "max_packet_size": 4096,
+        "delimiter": DEFAULT_DELIMITER,
+        "ip_client_mapping_file": "config/ip-client-mapping.yaml",
+        "pubsub": False,
+        "pubsub_topic": DEFAULT_PUB_TOPIC,
+        "pubsub_project": DEFAULT_PUB_PROJ
+    }
 
 
 def define_parser():
@@ -73,13 +90,13 @@ def define_parser():
 
     add = common.add_argument
     # Common arguments
-    add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
     add("-c", "--config-file", type=str, metavar=" ", help=HELP_CONFIG_FILE)
-    add("--no-rich-logging", action="store_true", help=HELP_NO_RICH_LOGGING)
-    add("--protocol", type=str, default=DEFAULT_PROTOCOL, metavar=" ", help=HELP_PROTOCOL)
-    add("--host", type=str, default="0.0.0.0", metavar=" ", help=HELP_HOST)
-    add("--port", type=int, default=10110, metavar=" ", help=HELP_PORT)
-    add("--daemon-thread", action="store_true", help=HELP_DAEMON_THREAD)
+    add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
+    add("--no-rich-logging", action="store_true", default=False, help=HELP_NO_RICH_LOGGING)
+    add("--protocol", type=str, metavar=" ", help=HELP_PROTOCOL)
+    add("--host", type=str, metavar=" ", help=HELP_HOST)
+    add("--port", type=int, metavar=" ", help=HELP_PORT)
+    add("--daemon-thread", action="store_true", default=None, help=HELP_DAEMON_THREAD)
 
     # Subparsers
     subparsers = parser.add_subparsers(required=True)
@@ -89,13 +106,14 @@ def define_parser():
 
     p.set_defaults(func=receivers.run)
     add = p.add_argument
-    add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
-    add("--delimiter", type=str, default=DEFAULT_DELIMITER, metavar=" ", help=HELP_DELIMITER)
+    add("--max-packet-size", type=int, metavar=" ", help=HELP_MAX_PACKET_SIZE)
+    add("--delimiter", type=str, metavar=" ", help=HELP_DELIMITER)
+    add("--ip-client-mapping-file", type=str, metavar=" ", help=HELP_IP_CLIENT_MAPPING_FILE)
 
     add = p.add_argument_group("Google Pub/Sub sink").add_argument
-    add("--pubsub", action="store_true", help=HELP_PUBSUB)
-    add("--pubsub-project", type=str, default=DEFAULT_PUB_PROJ, metavar=" ", help=HELP_PUB_PROJ)
-    add("--pubsub-topic", type=str, default=DEFAULT_PUB_TOPIC, metavar=" ", help=HELP_PUB_TOPIC)
+    add("--pubsub", action="store_true", default=None, help=HELP_PUBSUB)
+    add("--pubsub-project", type=str, metavar=" ", help=HELP_PUB_PROJ)
+    add("--pubsub-topic", type=str, metavar=" ", help=HELP_PUB_TOPIC)
 
     p = subparsers.add_parser(
         "transmitter", formatter_class=formatter(), parents=[common], help=HELP_TRANSMITTER)
@@ -127,10 +145,16 @@ def cli(args):
 
     config = {}
     if config_file is not None:
-        logger.info("Loading config file.")
+        logger.info(f"Loading config file from {config_file}.")
         config = yaml_load(config_file)
-    else:
-        config = vars(ns)
+
+    cli_args = vars(ns)
+
+    defaults_args = {k: v for k, v in defaults().items() if k in cli_args}
+    cli_args = {k: v for k, v in cli_args.items() if v is not None}
+
+    # cli_args takes precedence over config file and config file over defaults.
+    config = ChainMap(cli_args, config, defaults_args)
 
     setup_logger(verbose=verbose, rich=not no_rich_logging, force=True)
 

@@ -15,7 +15,7 @@ from functools import cached_property
 from .handlers import UDPRequestHandler
 from .monitor import ThreadMonitor
 from .sinks import create_sink
-
+from .utils import yaml_load
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +41,9 @@ def run(
     Returns:
         A tuple (receiver, thread).
     """
-    sinks_config = []
+    sinks_config = {}
     if pubsub:
-        sinks_config.append(
-            dict(name="google_pubsub", project_id=pubsub_project, topic_id=pubsub_topic))
+        sinks_config["google_pubsub"] = dict(project_id=pubsub_project, topic_id=pubsub_topic)
 
     try:
         receiver = create(*args, **kwargs, sinks_config=sinks_config)
@@ -73,17 +72,18 @@ def create(protocol="UDP", *args, **kwargs) -> 'SocketReceiver':
 class SocketReceiver(ABC):
     """Base class for socket data reception.
 
-    A socket receiver object implemented using
-    We leverage the socketserver module from the standard library.
+    A socket receiver object implemented using the socketserver module from the standard library.
+    A ThreadMonitor object will be logging the number of threads alive every N number of seconds.
 
     Args:
-        poll_interval: Poll for server shutdown every this amount of seconds
-        thread_monitor_delay: Log number of active threads every this amount of seconds.
+        poll_interval: Seconds to wait before poll for server shutdown.
+        thread_monitor_delay: Seconds between each log entry with number of active threads.
         host: The IP address to use.
         port: The port to use.
-        source_name: Name of the provider. Used only for metadata.
         max_packet_size: The maximum amount of data to be received at once.
+        delimiter: symbol to use as delimiter while splitting packets into messages.
         sinks: List of sinks in which to publish incoming packets.
+        ip_client_mapping: A mapping (IP -> client_name).
     """
     def __init__(
         self,
@@ -94,7 +94,7 @@ class SocketReceiver(ABC):
         max_packet_size: int = 4096,
         delimiter: str = "\n",
         sinks=(),
-        source_name: str = "Unknown",
+        ip_client_mapping: dict = None,
     ) -> None:
 
         self._poll_interval = poll_interval
@@ -107,7 +107,7 @@ class SocketReceiver(ABC):
         self._server.max_packet_size = max_packet_size
         self._server.delimiter = delimiter
         self._server.sinks = sinks
-        self._server.source_name = source_name
+        self._server.ip_client_mapping = ip_client_mapping or {}
 
     @staticmethod
     @abstractmethod
@@ -115,11 +115,24 @@ class SocketReceiver(ABC):
         """Instantiates a socketserver object."""
 
     @classmethod
-    def build(cls, sinks_config=(), **kwargs) -> 'SocketReceiver':
-        """Builds a socket receiver object."""
-        sinks = [create_sink(**c) for c in sinks_config]
+    def build(
+        cls, sinks_config: dict = None, ip_client_mapping_file: str = None, **kwargs
+    ) -> 'SocketReceiver':
+        """Builds a socket receiver object.
 
-        return cls(sinks=sinks, **kwargs)
+        Args:
+            sinks_config: Dictionary with sinks configuration.
+            ip_client_mapping_file: Path to file with ip->clients mappings.
+            **kwargs: keyword arguments for SocketReceiver constructor.
+        """
+        sinks = [create_sink(n, **v) for n, v in (sinks_config or {}).items()]
+
+        ip_client_mapping = None
+        if ip_client_mapping_file is not None:
+            logger.info(f"Loading (IP -> clients_name) mapping from {ip_client_mapping_file}.")
+            ip_client_mapping = yaml_load(ip_client_mapping_file)
+
+        return cls(sinks=sinks, ip_client_mapping=ip_client_mapping, **kwargs)
 
     @property
     def server(self):
@@ -139,7 +152,7 @@ class SocketReceiver(ABC):
     def start(self) -> None:
         """Starts the socket receiver."""
         logger.info(f"Listening {self.protocol} socket on {self.server_address}...")
-        logger.info(f"{len(self.sinks)} sink(s) configured ({", ".join(self.sinks)}).")
+        logger.info(f"{len(self.sinks)} sink(s) configured ({', '.join(self.sinks)}).")
 
         self._thread_monitor.start()
         with self._server:

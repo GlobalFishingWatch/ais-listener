@@ -22,7 +22,9 @@ def test_cli_with_config():
     _run_cli_in_thread(
         "receiver",
         "-c",
-        "config/UDP-ais-in-thread.yaml",
+        "config/UDP-in-thread.yaml",
+        "--ip-client-mapping-file",
+        "config/ip-client-mapping.yaml",
     )
 
 

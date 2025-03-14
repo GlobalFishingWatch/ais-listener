@@ -2,6 +2,7 @@
 import sys
 import logging
 import argparse
+from collections import ChainMap
 
 from socket_listener import receivers
 from socket_listener import transmitters
@@ -33,6 +34,7 @@ HELP_RECEIVER = "Receives data continuosly from network sockets."
 HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignored {HELP_DEFAULT}."
 HELP_MAX_PACKET_SIZE = f"The maximum amount of data to be received at once {HELP_DEFAULT}."
 HELP_DELIMITER = f"Delimiter to use when splitting incoming packets into messages {HELP_DEFAULT}."
+HELP_IP_CLIENT_MAPPING_FILE = f"Path to (IP -> client_name) mappings {HELP_DEFAULT}."
 
 HELP_PUBSUB = "Enable publication to Google PubSub service."
 HELP_PUB_PROJ = f"GCP project id {HELP_DEFAULT}."
@@ -48,7 +50,7 @@ DEFAULT_PROTOCOL = "UDP"
 DEFAULT_FILEPATH = "sample/nmea.txt"
 DEFAULT_PUB_PROJ = "world-fishing-827"
 DEFAULT_PUB_TOPIC = "NMEA"
-DEFAULT_DELIMITER = "'\\n'"
+DEFAULT_DELIMITER = "\n"
 
 
 def formatter():
@@ -91,6 +93,7 @@ def define_parser():
     add = p.add_argument
     add("--max-packet-size", type=int, default=4096, metavar=" ", help=HELP_MAX_PACKET_SIZE)
     add("--delimiter", type=str, default=DEFAULT_DELIMITER, metavar=" ", help=HELP_DELIMITER)
+    add("--ip-client-mapping-file", type=str, metavar=" ", help=HELP_IP_CLIENT_MAPPING_FILE)
 
     add = p.add_argument_group("Google Pub/Sub sink").add_argument
     add("--pubsub", action="store_true", help=HELP_PUBSUB)
@@ -129,8 +132,11 @@ def cli(args):
     if config_file is not None:
         logger.info("Loading config file.")
         config = yaml_load(config_file)
-    else:
-        config = vars(ns)
+
+    cli_args = vars(ns)
+
+    # cli_args takes precedence over config file.
+    config = ChainMap(cli_args, config)
 
     setup_logger(verbose=verbose, rich=not no_rich_logging, force=True)
 

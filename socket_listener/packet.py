@@ -55,7 +55,7 @@ class Packet:
     @cached_property
     def size(self) -> int:
         """Returns amount of messages contained in the packet."""
-        return sum(1 for x in self.messages)
+        return sum(1 for _ in self.messages)
 
     @property
     def messages(self) -> Generator:

@@ -3,7 +3,7 @@ from socket_listener.utils import yaml_load, chunked_it
 
 
 @pytest.mark.parametrize("filename,port", [
-    ('config/UDP-ais.yaml', 10110),
+    ('config/UDP-pubsub.yaml', 10110),
 ])
 def test_yaml_load(filename, port):
     config = yaml_load(filename)

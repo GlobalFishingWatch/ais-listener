@@ -41,12 +41,13 @@ def run(
     Returns:
         A tuple (receiver, thread).
     """
-    sinks = []
+    sinks_config = []
     if pubsub:
-        sinks.append(dict(name="google_pubsub", project_id=pubsub_project, topic_id=pubsub_topic))
+        sinks_config.append(
+            dict(name="google_pubsub", project_id=pubsub_project, topic_id=pubsub_topic))
 
     try:
-        receiver = create(*args, **kwargs, sinks=sinks)
+        receiver = create(*args, **kwargs, sinks_config=sinks_config)
     except NotImplementedError as e:
         logger.error(e)
         return
@@ -60,7 +61,7 @@ def run(
 
 def create(protocol="UDP", *args, **kwargs) -> 'SocketReceiver':
     receivers = {
-        "UDP": UDPSocketReceiver,
+        UDPSocketReceiver.protocol: UDPSocketReceiver,
     }
 
     if protocol not in receivers:
@@ -76,80 +77,70 @@ class SocketReceiver(ABC):
     We leverage the socketserver module from the standard library.
 
     Args:
+        poll_interval: Poll for server shutdown every this amount of seconds
+        thread_monitor_delay: Log number of active threads every this amount of seconds.
         host: The IP address to use.
         port: The port to use.
         source_name: Name of the provider. Used only for metadata.
         max_packet_size: The maximum amount of data to be received at once.
-        sinks: list of sinks in which to publish incoming packets.
+        sinks: List of sinks in which to publish incoming packets.
     """
     def __init__(
         self,
+        poll_interval: float = 0.5,
+        thread_monitor_delay: int = 2,
         host: str = "0.0.0.0",
         port: int = 10110,
-        source_name: str = "Unknown",
         max_packet_size: int = 4096,
-        sinks: list = None,
-        monitor_delay: int = 2,
-        delimiter: str = "\n"
+        delimiter: str = "\n",
+        sinks=(),
+        source_name: str = "Unknown",
     ) -> None:
-        self._host = host
-        self._port = port
-        self._source_name = source_name
-        self._max_packet_size = max_packet_size
-        self._sinks = sinks
-        self._delimiter = delimiter
 
-        self._thread_monitor = ThreadMonitor(delay=monitor_delay)
+        self._poll_interval = poll_interval
+        self._thread_monitor = ThreadMonitor(delay=thread_monitor_delay)
+
+        self._server = self.create_socketserver((host, port))
+
+        # Following proprerties are needed by the request handler.
+        # TODO: encapsulate these properties in ServerConfig class?
+        self._server.max_packet_size = max_packet_size
+        self._server.delimiter = delimiter
+        self._server.sinks = sinks
+        self._server.source_name = source_name
+
+    @staticmethod
+    @abstractmethod
+    def create_socketserver(server_address: tuple[str, int], **kwargs):
+        """Instantiates a socketserver object."""
 
     @classmethod
-    def build(cls, sinks=(), *args, **kwargs) -> 'SocketReceiver':
+    def build(cls, sinks_config=(), **kwargs) -> 'SocketReceiver':
         """Builds a socket receiver object."""
-        sinks = [create_sink(**config) for config in sinks]
+        sinks = [create_sink(**c) for c in sinks_config]
 
-        sinks_str = ", ".join([s.name for s in sinks])
-        logger.info(f"{len(sinks)} sink(s) configured ({sinks_str}).")
-
-        return cls(*args, **kwargs, sinks=sinks)
-
-    @cached_property
-    def address(self) -> str:
-        """Unified string version of the host and port properties."""
-        return f"{self._host}:{self._port}"
-
-    @cached_property
-    def host_and_port(self) -> tuple:
-        """Tupled version of the host and port properties."""
-        return (self._host, self._port)
-
-    @abstractmethod
-    def start(self) -> None:
-        """Starts the socket receiver."""
-
-
-class UDPSocketReceiver(SocketReceiver):
-    """UDP socket receiver implemented as a server.
-
-    This class uses socketserver.ThreadingUDPServer class from the standard library.
-    """
-
-    protocol = "UDP"
-
-    def __init__(self, poll_interval: float = 0.5, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._poll_interval = poll_interval
-
-        self._server = socketserver.ThreadingUDPServer(self.host_and_port, UDPRequestHandler)
-        self._server.max_packet_size = self._max_packet_size
-        self._server.source_name = self._source_name
-        self._server.sinks = self._sinks
-        self._server.delimiter = self._delimiter
+        return cls(sinks=sinks, **kwargs)
 
     @property
     def server(self):
         return self._server
 
+    @cached_property
+    def server_address(self) -> str:
+        """Unified string version of the host and port properties."""
+        host, port = self._server.server_address
+        return f"{host}:{port}"
+
+    @cached_property
+    def sinks(self):
+        """Returns list of sinks names."""
+        return [s.name for s in self._server.sinks]
+
     def start(self) -> None:
-        logger.info(f"Listening {self.protocol} socket on {self.address}...")
+        """Starts the socket receiver."""
+        logger.info(f"Listening {self.protocol} socket on {self.server_address}...")
+        logger.info(f"{len(self.sinks)} sink(s) configured ({", ".join(self.sinks)}).")
+
         self._thread_monitor.start()
         with self._server:
             self._server.serve_forever(poll_interval=self._poll_interval)
@@ -157,3 +148,13 @@ class UDPSocketReceiver(SocketReceiver):
     def shutdown(self):
         self._server.shutdown()
         self._thread_monitor.stop()
+
+
+class UDPSocketReceiver(SocketReceiver):
+    """UDP socket receiver."""
+
+    protocol = "UDP"
+
+    @staticmethod
+    def create_socketserver(server_address: tuple[str, int], **kwargs):
+        return socketserver.ThreadingUDPServer(server_address, UDPRequestHandler, **kwargs)

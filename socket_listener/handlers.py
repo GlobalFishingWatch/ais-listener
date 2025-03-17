@@ -8,33 +8,35 @@ from .packet import Packet
 logger = logging.getLogger(__name__)
 
 
-class DataPublisherMixin:
-    """Data publisher mixin to use in handlers."""
+class DataPublisherMixIn:
+    """Data publisher MixIn to use in handlers."""
 
-    def publish(self, data: bytes, host: str):
+    def publish(self, data: bytes):
         """Publishes data to configured sinks.
 
         Args:
-            data: Data to be published.
-            host: IP of incoming request.
+            data: the data to publish.
         """
+        host, _ = self.client_address
+
         packet = Packet(
             data,
             protocol=self.protocol,
             source_host=host,
-            source_name=self.server.source_name,
+            source_name=self.server.ip_client_mapping.get(host, "Unknown"),
             delimiter=self.server.delimiter
         )
 
+        logger.debug(
+            "Received {} message(s) from {} ({}) in {}."
+            .format(packet.size, host, packet.source_name, threading.current_thread().name))
+
         for sink in self.server.sinks:
             sink.publish(packet)
-
-        logger.debug(
-            "Published {} messages to {} received from {} in {}."
-            .format(packet.size, sink.path, host, threading.current_thread().name))
+            logger.debug(f"Published messages to {sink.path}")
 
 
-class UDPRequestHandler(socketserver.BaseRequestHandler, DataPublisherMixin):
+class UDPRequestHandler(socketserver.BaseRequestHandler, DataPublisherMixIn):
     protocol = "UDP"
 
     def handle(self):
@@ -42,6 +44,4 @@ class UDPRequestHandler(socketserver.BaseRequestHandler, DataPublisherMixin):
             self.request consists of a pair of data and client socket."""
 
         data, _ = self.request
-        host, _ = self.client_address
-
-        self.publish(data, host)
+        self.publish(data)

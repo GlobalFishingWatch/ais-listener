@@ -1,8 +1,8 @@
-source_name: 'ais-listener'
 protocol: UDP
 port: 10110
 max_packet_size: 4096
 daemon_thread: False
-pubsub: False
-pubsub_project: "world-fishing-927"
+delimiter: "\n"
+pubsub: True
+pubsub_project: "world-fishing-827"
 pubsub_topic: "NMEA"

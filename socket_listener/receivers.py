@@ -88,7 +88,7 @@ class SocketReceiver(ABC):
     def __init__(
         self,
         poll_interval: float = 0.5,
-        thread_monitor_delay: int = 2,
+        thread_monitor_delay: int = 5,
         host: str = "0.0.0.0",
         port: int = 10110,
         max_packet_size: int = 4096,

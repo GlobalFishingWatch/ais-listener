@@ -1,25 +1,45 @@
 """Module that encapuslates socket data transmitters."""
 
 import time
+import math
+import gzip
 import socket
 import logging
 import threading
 
-from typing import Generator, Iterable
+from pathlib import Path
+from typing import Generator, Iterable, Any
 from abc import ABC, abstractmethod
 from functools import cached_property
 from itertools import islice
+
+from rich.progress import track
 
 from .utils import chunked_it
 
 logger = logging.getLogger(__name__)
 
 
-def run(filepath, *args, daemon_thread=False, **kwargs):
+def open_file(path: Path, mode: str = 'rt', **kwargs: Any):
+    """Open a file using gzip.open if it ends with .gz, otherwise use open.
+
+    Args:
+        path: A pathlib.Path object pointing to the file.
+        mode: Mode to open the file. Use 'rt' or 'rb' for gzip files.
+        **kwargs: Additional arguments passed to open or gzip.open.
+
+    Returns:
+        file object: An open file object.
+    """
+    opener = gzip.open if path.suffix == '.gz' else open
+    return opener(path, mode, **kwargs)
+
+
+def run(path, *args, daemon_thread=False, **kwargs):
     """Runs a socket transmitter service inside a separate thread.
 
     Args:
-        filepath: the path to the file containing the data to be sent.
+        path: the path to the file or folder containing the data to be sent.
         *args: Positional arguments for socket transmitter constructor.
         daemon_thread: If true, makes the thread daemonic.
         **kwargs: Keyword arguments for socket transmitter constructor.
@@ -33,7 +53,7 @@ def run(filepath, *args, daemon_thread=False, **kwargs):
         logger.error(e)
         return
 
-    thread = threading.Thread(target=transmitter.start, args=[filepath])
+    thread = threading.Thread(target=transmitter.start, args=[path])
     thread.daemon = daemon_thread
     thread.start()
 
@@ -81,7 +101,7 @@ class SocketTransmitter(ABC):
         """Starts the socket transmitter.
 
         Args:
-            path: Path to the file containing the data to be sent.
+            path: Path to the file or folder containing the data to be sent.
         """
 
     @cached_property
@@ -103,23 +123,50 @@ class UDPSocketTransmitter(SocketTransmitter):
         self.__shutdown_request = False
 
     def start(self, path: str) -> None:
+        logger.info(f"Reading messages from {path}.")
         logger.info(
             "Sending chunks of {} messages using UDP to {} every {} seconds".format(
                 self._chunk_size, self.address, self._delay
             )
         )
 
+        path = Path(path)
+
+        if path.is_dir():
+            paths = sorted(path.iterdir())
+        else:
+            paths = [path]
+
+        for i, p in enumerate(paths, 1):
+            if p.is_dir():
+                logger.warning(f"Found subfolder: {p.relative_to(p.parent.parent)}. Ignoring...")
+                continue
+
+            logger.info(f"Processing file {i} of {len(paths)}...")
+            self._process_file(p)
+
+    def _process_file(self, path):
+        file_count, _ = self._get_file_line_count(path)
+        chunk_count = math.ceil(file_count / self._chunk_size)
+
         messages = islice(self._read_messages(path), 0, self._first_n)
         chunks = chunked_it(messages, self._chunk_size)
 
-        for chunk in chunks:
+        for chunk in track(chunks, total=chunk_count):
             self._send_messages(chunk)
             if self.__shutdown_request:
                 break
 
+    def _get_file_line_count(self, path) -> Generator:
+        count = 0
+        with open_file(path, "rt") as f:
+            for line in f:
+                count += 1
+
+        return count
+
     def _read_messages(self, path) -> Generator:
-        logger.info(f"Reading messages from {path}.")
-        with open(path, "r") as f:
+        with open_file(path, "rt") as f:
             for line in f:
                 yield line.strip()
 
@@ -132,7 +179,6 @@ class UDPSocketTransmitter(SocketTransmitter):
         sock.send(data)
         sock.close()
 
-        logger.info(f"Finished sending {len(messages_lst)} messages to {self.address}.")
         logger.debug(f"Data sent: {data}")
         time.sleep(self._delay)
 

@@ -41,15 +41,15 @@ HELP_PUB_PROJ = f"GCP project id {HELP_DEFAULT}."
 HELP_PUB_TOPIC = f"Google Pub/Sub topic id {HELP_DEFAULT}."
 
 HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for testing]."
-HELP_FILEPATH = f"Path to the file containing the data to send {HELP_DEFAULT}."
+HELP_PATH = f"Path to the file or folder containing the data to send {HELP_DEFAULT}."
 HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
 HELP_CHUNK_SIZE = f"Amount of messages to be sent in a single packet {HELP_DEFAULT}."
 HELP_FIRST_N = f"Only send the first n messages of the file and then stop. {HELP_DEFAULT}."
 
 DEFAULT_PROTOCOL = "UDP"
-DEFAULT_FILEPATH = "sample/nmea.txt"
+DEFAULT_PATH = "sample/nmea.txt"
 DEFAULT_PUB_PROJ = "world-fishing-827"
-DEFAULT_PUB_TOPIC = "NMEA"
+DEFAULT_PUB_TOPIC = "nmea-stream-dev"
 DEFAULT_DELIMITER = "\n"
 
 
@@ -123,7 +123,7 @@ def define_parser():
     add("--chunk-size", type=int, default=50, metavar=" ", help=HELP_CHUNK_SIZE)
     add("-n", "--first-n", type=int, default=None, metavar=" ", help=HELP_FIRST_N)
     add("-d", "--delay", type=float, default=1, metavar=" ", help=HELP_DELAY)
-    add("-f", "--filepath", type=str, default=DEFAULT_FILEPATH, metavar=" ", help=HELP_FILEPATH)
+    add("-p", "--path", type=str, default=DEFAULT_PATH, metavar=" ", help=HELP_PATH)
 
     return parser
 

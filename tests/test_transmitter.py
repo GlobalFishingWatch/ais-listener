@@ -71,7 +71,7 @@ def test_client_transmitter(protocol, filepath):
 
 
 def test_run():
-    transmitter, thread = transmitters.run(daemon_thread=True, filepath=EMPTY_FILEPATH)
+    transmitter, thread = transmitters.run(daemon_thread=True, path=EMPTY_FILEPATH)
     transmitter.shutdown()
     thread.join()
 
@@ -79,5 +79,5 @@ def test_run():
 def test_run_not_implemented_error():
     transmitters.run(
         protocol="invalid",
-        filepath="asd"
+        path="asd"
     )

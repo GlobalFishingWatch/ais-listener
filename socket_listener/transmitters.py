@@ -146,9 +146,7 @@ class UDPSocketTransmitter(SocketTransmitter):
             self._process_file(p)
 
     def _process_file(self, path):
-        file_count, _ = self._get_file_line_count(path)
-        chunk_count = math.ceil(file_count / self._chunk_size)
-
+        chunk_count = math.ceil(self._get_file_line_count(path) / self._chunk_size)
         messages = islice(self._read_messages(path), 0, self._first_n)
         chunks = chunked_it(messages, self._chunk_size)
 

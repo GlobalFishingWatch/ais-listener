@@ -31,10 +31,8 @@ class GooglePubSub(Sink):
 
     def publish(self, packet: Packet) -> None:
         for message in packet.messages:
-            future = self._publisher.publish(
+            self._publisher.publish(
                 self.path,
                 message.encode("utf-8"),
                 **packet.metadata
             )
-
-            logger.debug(f"Pub/Sub future result: {future.result()}")

@@ -33,7 +33,6 @@ class DataPublisherMixIn:
 
         for sink in self.server.sinks:
             sink.publish(packet)
-            logger.debug(f"Published messages to {sink.path}")
 
 
 class UDPRequestHandler(socketserver.BaseRequestHandler, DataPublisherMixIn):

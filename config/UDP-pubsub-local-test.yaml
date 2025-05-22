@@ -1,0 +1,8 @@
+protocol: UDP
+port: 10110
+max_packet_size: 65536
+daemon_thread: False
+delimiter: "\n"
+pubsub: True
+pubsub_project: "world-fishing-827"
+pubsub_topic: "nmea-stream-scratch"

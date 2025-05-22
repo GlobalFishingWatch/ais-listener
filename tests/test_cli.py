@@ -15,6 +15,7 @@ def test_cli():
     _run_cli_in_thread(
         "receiver",
         "--protocol", "UDP",
+        "--thread-monitor-delay", "0.01",
     )
 
 
@@ -25,6 +26,7 @@ def test_cli_with_config():
         "config/UDP-in-thread.yaml",
         "--ip-client-mapping-file",
         "config/ip-client-mapping.yaml",
+        "--thread-monitor-delay", "0.01",
     )
 
 

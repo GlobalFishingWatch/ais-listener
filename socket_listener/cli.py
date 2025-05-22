@@ -35,6 +35,7 @@ HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignore
 HELP_MAX_PACKET_SIZE = f"The maximum amount of data to be received at once {HELP_DEFAULT}."
 HELP_DELIMITER = f"Delimiter to use when splitting incoming packets into messages {HELP_DEFAULT}."
 HELP_IP_CLIENT_MAPPING_FILE = f"Path to (IP -> client_name) mappings {HELP_DEFAULT}."
+HELP_MONITOR_DELAY = f"Number of seconds between each log entry of ThreadMonitor {HELP_DEFAULT}."
 
 HELP_PUBSUB = "Enable publication to Google PubSub service."
 HELP_PUB_PROJ = f"GCP project id {HELP_DEFAULT}."
@@ -109,6 +110,7 @@ def define_parser():
     add("--max-packet-size", type=int, metavar=" ", help=HELP_MAX_PACKET_SIZE)
     add("--delimiter", type=str, metavar=" ", help=HELP_DELIMITER)
     add("--ip-client-mapping-file", type=str, metavar=" ", help=HELP_IP_CLIENT_MAPPING_FILE)
+    add("--thread-monitor-delay", type=float, metavar=" ", help=HELP_MONITOR_DELAY)
 
     add = p.add_argument_group("Google Pub/Sub sink").add_argument
     add("--pubsub", action="store_true", default=None, help=HELP_PUBSUB)

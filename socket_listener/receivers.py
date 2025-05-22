@@ -152,7 +152,9 @@ class SocketReceiver(ABC):
     def start(self) -> None:
         """Starts the socket receiver."""
         logger.info(f"Listening {self.protocol} socket on {self.server_address}...")
-        logger.info(f"{len(self.sinks)} sink(s) configured ({', '.join(self.sinks)}).")
+        logger.info(f"{len(self.sinks)} sink(s) configured ({', '.join(self.sinks)}):")
+        for sink in self._server.sinks:
+            logger.info(f"{sink.name}: {sink.path}")
 
         self._thread_monitor.start()
         with self._server:

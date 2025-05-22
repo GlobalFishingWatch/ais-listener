@@ -156,7 +156,16 @@ def cli(args):
     # cli_args takes precedence over config file and config file over defaults.
     config = ChainMap(cli_args, config, defaults_args)
 
-    setup_logger(verbose=verbose, rich=not no_rich_logging, force=True)
+    setup_logger(
+        verbose=verbose,
+        rich=not no_rich_logging,
+        force=True,
+        warning_level=[
+            "google.cloud.pubsub_v1.publisher",
+            "urllib3.connectionpool",
+            "google.auth.transport.requests",
+        ]
+    )
 
     logger.info(f"Starting {NAME_TPL.format(version=__version__)}")
     logger.info(pretty_print_args(config))

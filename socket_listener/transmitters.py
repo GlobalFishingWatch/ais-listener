@@ -1,9 +1,11 @@
 """Module that encapuslates socket data transmitters."""
-
+import sys
 import time
 import math
 import gzip
 import socket
+import atexit
+import signal
 import logging
 import threading
 
@@ -14,10 +16,34 @@ from functools import cached_property
 from itertools import islice
 
 from rich.progress import track
+from rich.console import Console
 
 from .utils import chunked_it
 
+console = Console()
+
+
+def _cleanup_terminal():
+    """Restore terminal state (show cursor and newline)."""
+    console.show_cursor(True)
+    console.print()  # Forces newline in case progress bar was interrupted
+
+
+def _handle_sigint(sig, frame):
+    """Handle Ctrl+C cleanly and exit."""
+    console.print("[red]Interrupted by user (Ctrl+C)[/red]")
+    sys.exit(130)
+
+
+def setup_rich_cleanup():
+    """Call this once at the start of your script to ensure terminal is cleaned up properly."""
+    atexit.register(_cleanup_terminal)
+    signal.signal(signal.SIGINT, _handle_sigint)
+
+
 logger = logging.getLogger(__name__)
+
+setup_rich_cleanup()
 
 
 def open_file(path: Path, mode: str = 'rt', **kwargs: Any):
@@ -142,15 +168,15 @@ class UDPSocketTransmitter(SocketTransmitter):
                 logger.warning(f"Found subfolder: {p.relative_to(p.parent.parent)}. Ignoring...")
                 continue
 
-            logger.info(f"Processing file {i} of {len(paths)}...")
-            self._process_file(p)
+            self._process_file(p, i, len(paths))
 
-    def _process_file(self, path):
-        chunk_count = math.ceil(self._get_file_line_count(path) / self._chunk_size)
+    def _process_file(self, path, i, n):
         messages = islice(self._read_messages(path), 0, self._first_n)
         chunks = chunked_it(messages, self._chunk_size)
 
-        for chunk in track(chunks, total=chunk_count):
+        total = math.ceil(self._get_file_line_count(path) / self._chunk_size)
+        description = "Processing {i}/{n}:"
+        for chunk in track(chunks, total=total, description=description.format(i=i, n=n)):
             self._send_messages(chunk)
             if self.__shutdown_request:
                 break

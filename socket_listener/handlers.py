@@ -31,6 +31,10 @@ class DataPublisherMixIn:
             "Received {} message(s) from {} ({}) in {}."
             .format(packet.size, host, packet.source_name, threading.current_thread().name))
 
+        if logging.getLogger().level == logging.DEBUG:
+            for m in packet.messages:
+                logger.debug(m)
+
         for sink in self.server.sinks:
             sink.publish(packet)
 

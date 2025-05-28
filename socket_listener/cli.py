@@ -2,6 +2,7 @@
 import sys
 import logging
 import argparse
+from pathlib import Path
 from collections import ChainMap
 
 from socket_listener import receivers
@@ -29,6 +30,8 @@ HELP_PROTOCOL = f"Network protocol to use {HELP_DEFAULT}."
 HELP_PORT = f"Port to use {HELP_DEFAULT}."
 HELP_HOST = f"IP to use {HELP_DEFAULT}."
 HELP_DAEMON_THREAD = "Run main process in a daemonic thread [Useful for testing]."
+HELP_LOG_FILE = "If True, logs will be written to a file."
+HELP_WORKDIR = "Directory to use for saving outputs, logs, and other artifacts."
 
 HELP_RECEIVER = "Receives data continuosly from network sockets."
 HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignored {HELP_DEFAULT}."
@@ -52,6 +55,9 @@ DEFAULT_PATH = "sample/nmea.txt"
 DEFAULT_PUB_PROJ = "world-fishing-827"
 DEFAULT_PUB_TOPIC = "nmea-stream-dev"
 DEFAULT_DELIMITER = "\n"
+
+TEMPLATE_LOG_FILENAME = "socket-listener-{operation}.log"
+DEFAULT_WORKDIR = "workdir"
 
 
 def formatter():
@@ -92,15 +98,17 @@ def define_parser():
     add = common.add_argument
     # Common arguments
     add("-c", "--config-file", type=str, metavar=" ", help=HELP_CONFIG_FILE)
-    add("-v", "--verbose", action="store_true", default=False, help=HELP_VERBOSE)
-    add("--no-rich-logging", action="store_true", default=False, help=HELP_NO_RICH_LOGGING)
+    add("-w", "--workdir", type=str, default=DEFAULT_WORKDIR, metavar=" ", help=HELP_WORKDIR)
+    add("-v", "--verbose", action="store_true", help=HELP_VERBOSE)
+    add("-l", "--log-to-file", action="store_true", help=HELP_LOG_FILE),
+    add("--no-rich-logging", action="store_true", help=HELP_NO_RICH_LOGGING)
     add("--protocol", type=str, metavar=" ", help=HELP_PROTOCOL)
     add("--host", type=str, metavar=" ", help=HELP_HOST)
     add("--port", type=int, metavar=" ", help=HELP_PORT)
     add("--daemon-thread", action="store_true", default=None, help=HELP_DAEMON_THREAD)
 
     # Subparsers
-    subparsers = parser.add_subparsers(required=True)
+    subparsers = parser.add_subparsers(dest="operation", required=True)
 
     p = subparsers.add_parser(
         "receiver", formatter_class=formatter(), parents=[common], help=HELP_RECEIVER)
@@ -138,12 +146,33 @@ def cli(args):
     no_rich_logging = ns.no_rich_logging
     func = ns.func
     config_file = ns.config_file
+    log_to_file = ns.log_to_file
+    workdir = ns.workdir
+
+    log_file = None
+    if log_to_file:
+        log_file = Path(workdir) / TEMPLATE_LOG_FILENAME.format(operation=ns.operation)
+
+    setup_logger(
+        verbose=verbose,
+        rich=not no_rich_logging,
+        force=True,
+        warning_level=[
+            "google.cloud.pubsub_v1.publisher",
+            "urllib3.connectionpool",
+            "google.auth.transport.requests",
+        ],
+        log_file=log_file,
+    )
 
     # Delete CLI configuration from parsed namespace.
     del ns.verbose
     del ns.no_rich_logging
     del ns.func
     del ns.config_file
+    del ns.log_to_file
+    del ns.operation
+    del ns.workdir
 
     config = {}
     if config_file is not None:
@@ -158,19 +187,10 @@ def cli(args):
     # cli_args takes precedence over config file and config file over defaults.
     config = ChainMap(cli_args, config, defaults_args)
 
-    setup_logger(
-        verbose=verbose,
-        rich=not no_rich_logging,
-        force=True,
-        warning_level=[
-            "google.cloud.pubsub_v1.publisher",
-            "urllib3.connectionpool",
-            "google.auth.transport.requests",
-        ]
-    )
-
     logger.info(f"Starting {NAME_TPL.format(version=__version__)}")
     logger.info(pretty_print_args(config))
+    if log_file:
+        logger.info(f"File logging enabled. Logs will be saved to: {log_file}")
 
     return func(**config)
 

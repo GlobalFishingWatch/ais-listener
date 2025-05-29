@@ -196,11 +196,11 @@ class UDPSocketTransmitter(SocketTransmitter):
 
     def _send_messages(self, messages: Iterable[bytes]):
         messages_lst = list(messages)
-        data = "\n".join(messages_lst).encode("utf-8")
+        data = "\n".join(messages_lst)
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.connect((self._host, self._port))
-        sock.send(data)
+        sock.send(data.encode("utf-8"))
         sock.close()
 
         logger.debug(f"Data sent: {data}")

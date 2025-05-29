@@ -71,58 +71,62 @@ make gcp
 
 ```shell
 (.venv) $ socket-listener receiver -h
-usage: Socket Listener (v0.1.0). receiver [-h] [-v] [-c ] [--no-rich-logging] [--protocol ] [--host ] [--port ] [--daemon-thread] [--max-packet-size ] [--delimiter ] [--pubsub]
-                                          [--pubsub-project ] [--pubsub-topic ]
+usage: Socket Listener (v0.1.0). receiver [-h] [-c ] [-w ] [-v] [-l] [--no-rich-logging] [--protocol ] [--host ] [--port ] [--daemon-thread] [--max-packet-size ] [--delimiter ]
+                                          [--ip-client-mapping-file ] [--thread-monitor-delay ] [--pubsub] [--pubsub-project ] [--pubsub-topic ]
 
 options:
-  -h, --help             show this help message and exit
-  -v, --verbose          Set logger level to DEBUG.
-  -c  , --config-file    Path to config file. If passed, rest of CLI args are ignored (default: None).
-  --no-rich-logging      Disable rich logging [useful for production environments].
-  --protocol             Network protocol to use (default: UDP).
-  --host                 IP to use (default: 0.0.0.0).
-  --port                 Port to use (default: 10110).
-  --daemon-thread        Run main process in a daemonic thread [Useful for testing].
-  --max-packet-size      The maximum amount of data to be received at once (default: 4096).
-  --delimiter            Delimiter to use when splitting incoming packets into messages (default: '\n').
+  -h, --help                  show this help message and exit
+  -c  , --config-file         Path to config file. If passed, rest of CLI args are ignored (default: None).
+  -w  , --workdir             Directory to use for saving outputs, logs, and other artifacts.
+  -v, --verbose               Set logger level to DEBUG.
+  -l, --log-to-file           If True, logs will be written to a file.
+  --no-rich-logging           Disable rich logging [useful for production environments].
+  --protocol                  Network protocol to use (default: None).
+  --host                      IP to use (default: None).
+  --port                      Port to use (default: None).
+  --daemon-thread             Run main process in a daemonic thread [Useful for testing].
+  --max-packet-size           The maximum amount of data to be received at once (default: None).
+  --delimiter                 Delimiter to use when splitting incoming packets into messages (default: None).
+  --ip-client-mapping-file    Path to (IP -> client_name) mappings (default: None).
+  --thread-monitor-delay      Number of seconds between each log entry of ThreadMonitor (default: None).
 
 Google Pub/Sub sink:
-  --pubsub               Enable publication to Google PubSub service.
-  --pubsub-project       GCP project id (default: world-fishing-827).
-  --pubsub-topic         Google Pub/Sub topic id (default: NMEA).
+  --pubsub                    Enable publication to Google PubSub service.
+  --pubsub-project            GCP project id (default: None).
+  --pubsub-topic              Google Pub/Sub topic id (default: None).
 ```
 
 Examples:
 ```shell
-socket-listener receiver --protocol UDP --port 10112 --max-packet-size 2048
+socket-listener receiver --protocol UDP --port 10112 --max-packet-size 4096
 ```
 
 Example of configuration file:
 ```yaml
-source_name: 'ais-listener'
 protocol: UDP
 port: 10110
-max_packet_size: 4096
+max_packet_size: 65536
 daemon_thread: False
+delimiter: "\n"
 pubsub: True
-pubsub_project: "world-fishing-927"
-pubsub_topic: "NMEA"
+pubsub_project: "world-fishing-827"
+pubsub_topic: "nmea-stream-dev"
 ```
 
 #### Running within docker
 
 To run in docker:
 ```shell
-docker compose run --rm receiver -c config/UDP-ais.yaml
+docker compose run --rm receiver -c config/UDP-pubsub-nmea-stream-dev.yaml
 ```
 
 ## Development
 
 A socket _**transmitter**_ object exists that can be used for testing.
 
-To send test messages via UDP use
+For example:
 ```shell
-socket-listener transmitter --protocol=UDP --port [PORT_TO_CONNECT]
+socket-listener transmitter -p PATH_TO_FILE_OR_DIR --chunk-size 600 --delay 0.5
 ```
 
 ### Updating dependencies

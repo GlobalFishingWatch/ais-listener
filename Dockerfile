@@ -24,7 +24,9 @@ FROM base AS prod
 
 # Install app package
 COPY . /opt/project
-RUN pip install .
+RUN pip install . && \
+    rm -rf /root/.cache/pip && \
+    rm -rf /opt/project/*
 
 # ---------------------------------------------------------------------------------------
 # DEV
@@ -41,3 +43,15 @@ RUN pip install --no-cache-dir -r test.txt
 COPY . /opt/project
 RUN pip install -e .
 
+# ---------------------------------------------------------------------------------------
+# TEST IMAGE (This checks that package is properly installed in prod image)
+# ---------------------------------------------------------------------------------------
+FROM prod AS test
+
+COPY ./tests /opt/project/tests
+COPY ./config /opt/project/config
+COPY ./sample /opt/project/sample
+
+COPY ./requirements/test.txt /opt/project/
+
+RUN pip install -r test.txt

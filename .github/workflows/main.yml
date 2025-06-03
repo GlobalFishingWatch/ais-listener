@@ -49,6 +49,16 @@ jobs:
         run: |
           make test
 
+      - name: Upload coverage reports to Codecov
+        if: |
+          (github.ref == 'refs/heads/master' || 
+          github.ref == 'refs/heads/develop') && 
+          matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4.0.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+
   build-and-test:
     runs-on: ubuntu-latest
     steps:
@@ -57,12 +67,7 @@ jobs:
         uses: actions/setup-python@v4.1.0
   
       - name: Build docker image
-        run: make build
+        run: make docker-build
     
       - name: Run tests
-        run: make ci-test
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4.0.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+        run: make docker-ci-test

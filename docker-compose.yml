@@ -1,5 +1,20 @@
 services:
-  receiver:
+  gcloud:
+    image: google/cloud-sdk:latest
+    entrypoint: gcloud
+    volumes:
+      - "gcp:/root/.config/"
+
+  shell:
+    build:
+      context: .
+      target: dev
+    volumes:
+      - ".:/opt/project"
+      - "gcp:/root/.config/"
+    entrypoint: /bin/sh
+
+  dev:
     build:
       context: .
       target: dev
@@ -10,19 +25,27 @@ services:
       - "gcp:/root/.config/"
     entrypoint:  [ "socket-listener", "receiver", "--no-rich-logging" ]
 
-  gcloud:
-    image: google/cloud-sdk:latest
-    entrypoint: gcloud
-    volumes:
-      - "gcp:/root/.config/"
-
-  dev:
-    entrypoint: /bin/sh
+  test:
     build:
       context: .
+      target: test
+    ports:
+      - "10110:10110/udp"
     volumes:
-      - ".:/opt/project"
       - "gcp:/root/.config/"
+    entrypoint:  [ "pytest", "-v" ]
+
+
+  prod:
+    build:
+      context: .
+      target: prod
+    ports:
+      - "10110:10110/udp"
+    volumes:
+      - "gcp:/root/.config/"
+    entrypoint:  [ "socket-listener", "receiver", "-v" ]
+
 
 volumes:
   gcp:

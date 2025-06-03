@@ -2,8 +2,14 @@
 requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
+# Build system metadata.
 [tool.setuptools]
-packages = ["socket_listener"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["socket_listener", "socket_listener.*"]
+exclude = ["tests*"]
+# namespaces = false
 
 [project]
 name = "socket-listener"

@@ -45,6 +45,14 @@ We still don't have a package in PYPI.
 
 First, clone the repository.
 
+Make sure you can build the docker image:
+```shell
+make docker-build
+```
+In order to be able to connect to BigQuery, authenticate and configure the project:
+```shell
+make docker-gcp
+```
 Create virtual environment and activate it:
 ```shell
 python -m venv .venv
@@ -57,14 +65,6 @@ make install
 Make sure you can run unit tests:
 ```shell
 make test
-```
-Make sure you can build the docker image:
-```shell
-make build
-```
-In order to be able to connect to BigQuery, authenticate and configure the project:
-```shell
-make gcp
 ```
 
 ### Using the CLI
@@ -110,14 +110,14 @@ daemon_thread: False
 delimiter: "\n"
 pubsub: True
 pubsub_project: "world-fishing-827"
-pubsub_topic: "nmea-stream-dev"
+pubsub_topic: "nmea-stream-scratch"
 ```
 
 #### Running within docker
 
 To run in docker:
 ```shell
-docker compose run --rm receiver -c config/UDP-pubsub-nmea-stream-dev.yaml
+docker compose run --rm dev -c config/UDP-pubsub-nmea-stream-dev.yaml
 ```
 
 ## Development
@@ -145,7 +145,7 @@ make reqs
 If you want to upgrade all dependencies to latest available versions
 (compatible with restrictions declared), just run:
 ```shell
-make upgrade-reqs
+make reqs-upgrade
 ```
 
 ### How to deploy

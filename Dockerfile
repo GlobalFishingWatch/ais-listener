@@ -48,10 +48,10 @@ RUN pip install -e .
 # ---------------------------------------------------------------------------------------
 FROM prod AS test
 
-COPY ./tests /opt/project/tests
 COPY ./config /opt/project/config
 COPY ./sample /opt/project/sample
 
+COPY ./tests /opt/project/tests
 COPY ./requirements/test.txt /opt/project/
 
 RUN pip install -r test.txt

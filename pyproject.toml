@@ -9,7 +9,9 @@ include-package-data = true
 [tool.setuptools.packages.find]
 include = ["socket_listener", "socket_listener.*"]
 exclude = ["tests*"]
-# namespaces = false
+
+[tool.setuptools.package-data]
+"assets" = ["*"]
 
 [project]
 name = "socket-listener"

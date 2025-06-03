@@ -9,15 +9,21 @@ import logging
 import threading
 import socketserver
 
+from importlib import resources
 from abc import ABC, abstractmethod
 from functools import cached_property
+
+from socket_listener import assets
 
 from .handlers import UDPRequestHandler
 from .monitor import ThreadMonitor
 from .sinks import create_sink
 from .utils import yaml_load
 
+
 logger = logging.getLogger(__name__)
+
+DEFAULT_IP_CLIENT_MAPPING_FILE = "ip-client-mapping.yaml"
 
 
 def run(
@@ -127,10 +133,11 @@ class SocketReceiver(ABC):
         """
         sinks = [create_sink(n, **v) for n, v in (sinks_config or {}).items()]
 
-        ip_client_mapping = None
-        if ip_client_mapping_file is not None:
-            logger.info(f"Loading (IP -> clients_name) mapping from {ip_client_mapping_file}.")
-            ip_client_mapping = yaml_load(ip_client_mapping_file)
+        if ip_client_mapping_file is None:
+            ip_client_mapping_file = str(resources.files(assets) / DEFAULT_IP_CLIENT_MAPPING_FILE)
+
+        logger.info(f"Loading (IP -> clients_name) mapping from {ip_client_mapping_file}.")
+        ip_client_mapping = yaml_load(ip_client_mapping_file)
 
         return cls(sinks=sinks, ip_client_mapping=ip_client_mapping, **kwargs)
 

@@ -77,7 +77,7 @@ def defaults():
         "daemon_thread": False,
         "max_packet_size": 4096,
         "delimiter": DEFAULT_DELIMITER,
-        "ip_client_mapping_file": "config/ip-client-mapping.yaml",
+        "ip_client_mapping_file": None,
         "pubsub": False,
         "pubsub_topic": DEFAULT_PUB_TOPIC,
         "pubsub_project": DEFAULT_PUB_PROJ

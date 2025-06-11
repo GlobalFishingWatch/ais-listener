@@ -48,6 +48,7 @@ HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for 
 HELP_PATH = f"Path to the file or folder containing the data to send {HELP_DEFAULT}."
 HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
 HELP_CHUNK_SIZE = f"Amount of messages to be sent in a single packet {HELP_DEFAULT}."
+HELP_SPLITTER = f"Function to use for splitting the input files into chunks {HELP_DEFAULT}."
 HELP_FIRST_N = f"Only send the first n messages of the file and then stop. {HELP_DEFAULT}."
 
 DEFAULT_PROTOCOL = "UDP"
@@ -131,6 +132,7 @@ def define_parser():
     p.set_defaults(func=transmitters.run)
     add = p.add_argument
     add("--chunk-size", type=int, default=50, metavar=" ", help=HELP_CHUNK_SIZE)
+    add("--splitter", type=str, default="fixed", metavar=" ", help=HELP_SPLITTER)
     add("-n", "--first-n", type=int, default=None, metavar=" ", help=HELP_FIRST_N)
     add("-d", "--delay", type=float, default=1, metavar=" ", help=HELP_DELAY)
     add("-p", "--path", type=str, default=DEFAULT_PATH, metavar=" ", help=HELP_PATH)

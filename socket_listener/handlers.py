@@ -27,7 +27,7 @@ class DataPublisherMixIn:
             delimiter=self.server.delimiter
         )
 
-        logger.debug(
+        logger.info(
             "Received {} message(s) from {} ({}) in {}."
             .format(packet.size, host, packet.source_name, threading.current_thread().name))
 

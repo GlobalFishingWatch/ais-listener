@@ -47,6 +47,11 @@ class Packet:
         self.time = datetime.now(tz=timezone.utc)
 
     @cached_property
+    def decoded_data(self) -> bool:
+        """Returns the decoded data."""
+        return self.data.decode(self.decode_method)
+
+    @cached_property
     def empty(self) -> bool:
         """Returns whether or not the packet is empty."""
         return not self.data
@@ -79,8 +84,7 @@ class Packet:
         If that fails, yields the raw message as bytes.
         """
         try:
-            decoded = self.data.decode(self.decode_method)
-            for line in decoded.strip().split(self.delimiter):
+            for line in self.decoded_data.strip().split(self.delimiter):
                 if line:
                     yield line.strip().encode(self.decode_method)
         except Exception as e:

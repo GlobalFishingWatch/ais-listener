@@ -18,7 +18,8 @@ from itertools import islice
 from rich.progress import track
 from rich.console import Console
 
-from .utils import chunked_it
+from gfw.common.iterables import chunked_it
+
 from .utils import chunked_nmea_it
 
 console = Console()

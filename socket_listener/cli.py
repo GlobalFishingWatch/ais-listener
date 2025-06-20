@@ -5,10 +5,13 @@ import argparse
 from pathlib import Path
 from collections import ChainMap
 
+from gfw.common.io import yaml_load
+from gfw.common.logging import LoggerConfig
+
 from socket_listener import receivers
 from socket_listener import transmitters
 from socket_listener.version import __version__
-from socket_listener.utils import setup_logger, pretty_print_args, yaml_load
+from socket_listener.utils import pretty_print_args
 
 logger = logging.getLogger(__name__)
 
@@ -155,15 +158,17 @@ def cli(args):
     if log_to_file:
         log_file = Path(workdir) / TEMPLATE_LOG_FILENAME.format(operation=ns.operation)
 
-    setup_logger(
-        verbose=verbose,
-        rich=not no_rich_logging,
-        force=True,
+    logger_config = LoggerConfig(
         warning_level=[
             "google.cloud.pubsub_v1.publisher",
             "urllib3.connectionpool",
             "google.auth.transport.requests",
         ],
+    )
+
+    logger_config.setup(
+        rich=not no_rich_logging,
+        verbose=verbose,
         log_file=log_file,
     )
 

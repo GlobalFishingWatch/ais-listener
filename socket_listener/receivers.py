@@ -13,12 +13,13 @@ from importlib import resources
 from abc import ABC, abstractmethod
 from functools import cached_property
 
+from gfw.common.io import yaml_load
+
 from socket_listener import assets
 
 from .handlers import UDPRequestHandler
 from .monitor import ThreadMonitor
 from .sinks import create_sink
-from .utils import yaml_load
 
 
 logger = logging.getLogger(__name__)

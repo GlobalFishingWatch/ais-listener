@@ -5,8 +5,8 @@ def test_messages():
     p = Packet(b"123 \n 456")
 
     assert len(p.messages_list) == 2
-    assert list(p.messages_list)[0] == "123"
-    assert list(p.messages_list)[1] == "456"
+    assert list(p.messages_list)[0] == b"123"
+    assert list(p.messages_list)[1] == b"456"
 
 
 def test_metadata():

@@ -33,6 +33,7 @@ def run(
     pubsub: bool = False,
     pubsub_project: str = None,
     pubsub_topic: str = None,
+    pubsub_data_format: str = "raw",
     daemon_thread: bool = False,
     **kwargs,
 ):
@@ -51,6 +52,9 @@ def run(
         pubsub_topic_id:
             Topic id for Pub/Sub integration.
 
+        pubsub_data_format:
+            The data format for for Pub/Sub integration.
+
         daemon_thread:
             If true, makes the thread daemonic.
 
@@ -61,7 +65,11 @@ def run(
     """
     sinks_config = {}
     if pubsub:
-        sinks_config["google_pubsub"] = dict(project_id=pubsub_project, topic_id=pubsub_topic)
+        sinks_config["google_pubsub"] = dict(
+            project_id=pubsub_project,
+            topic_id=pubsub_topic,
+            data_format=pubsub_data_format,
+        )
 
     try:
         receiver = create(*args, **kwargs, sinks_config=sinks_config)

@@ -51,7 +51,6 @@ class GooglePubSub(Sink):
         }
 
     def publish(self, packet: Packet) -> None:
-        print("JAJAJAJJA", packet)
         self.publish_methods[self._data_format](packet)
 
     def _publish_raw(self, packet: Packet) -> None:

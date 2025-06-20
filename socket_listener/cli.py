@@ -20,38 +20,39 @@ DESCRIPTION = (
     "and publish them to desired destinations."
 )
 
-HELP_DEFAULT = "(default: %(default)s)"
 HELP_NO_RICH_LOGGING = "Disable rich logging [useful for production environments]."
 HELP_VERBOSE = "Set logger level to DEBUG."
-HELP_PROTOCOL = f"Network protocol to use {HELP_DEFAULT}."
-HELP_PORT = f"Port to use {HELP_DEFAULT}."
-HELP_HOST = f"IP to use {HELP_DEFAULT}."
+HELP_PROTOCOL = "Network protocol to use."
+HELP_PORT = "Port to use."
+HELP_HOST = "IP to use."
 HELP_DAEMON_THREAD = "Run main process in a daemonic thread [Useful for testing]."
 HELP_LOG_FILE = "If True, logs will be written to a file."
 HELP_WORKDIR = "Directory to use for saving outputs, logs, and other artifacts."
 
 HELP_RECEIVER = "Receives data continuosly from network sockets."
-HELP_CONFIG_FILE = f"Path to config file. If passed, rest of CLI args are ignored {HELP_DEFAULT}."
-HELP_MAX_PACKET_SIZE = f"The maximum amount of data to be received at once {HELP_DEFAULT}."
-HELP_DELIMITER = f"Delimiter to use when splitting incoming packets into messages {HELP_DEFAULT}."
-HELP_IP_CLIENT_MAPPING_FILE = f"Path to (IP -> client_name) mappings {HELP_DEFAULT}."
-HELP_MONITOR_DELAY = f"Number of seconds between each log entry of ThreadMonitor {HELP_DEFAULT}."
+HELP_CONFIG_FILE = "Path to config file. If passed, rest of CLI args are ignored."
+HELP_MAX_PACKET_SIZE = "The maximum amount of data to be received at once."
+HELP_DELIMITER = "Delimiter to use when splitting incoming packets into messages."
+HELP_IP_CLIENT_MAPPING_FILE = "Path to (IP -> client_name) mappings."
+HELP_MONITOR_DELAY = "Number of seconds between each log entry of ThreadMonitor."
 
 HELP_PUBSUB = "Enable publication to Google PubSub service."
-HELP_PUB_PROJ = f"GCP project id {HELP_DEFAULT}."
-HELP_PUB_TOPIC = f"Google Pub/Sub topic id {HELP_DEFAULT}."
+HELP_PUB_PROJ = "GCP project id."
+HELP_PUB_TOPIC = "Google Pub/Sub topic id."
+HELP_FORMAT = "Data format to use for Google Pub/Sub messages."
 
 HELP_TRANSMITTER = "Sends lines from a file through network sockets [useful for testing]."
-HELP_PATH = f"Path to the file or folder containing the data to send {HELP_DEFAULT}."
-HELP_DELAY = f"Delay in seconds between sent messages {HELP_DEFAULT}."
-HELP_CHUNK_SIZE = f"Amount of messages to be sent in a single packet {HELP_DEFAULT}."
-HELP_SPLITTER = f"Function to use for splitting the input files into chunks {HELP_DEFAULT}."
-HELP_FIRST_N = f"Only send the first n messages of the file and then stop. {HELP_DEFAULT}."
+HELP_PATH = "Path to the file or folder containing the data to send."
+HELP_DELAY = "Delay in seconds between sent messages."
+HELP_CHUNK_SIZE = "Amount of messages to be sent in a single packet."
+HELP_SPLITTER = "Function to use for splitting the input files into chunks."
+HELP_FIRST_N = "Only send the first n messages of the file and then stop.."
 
 DEFAULT_PROTOCOL = "UDP"
 DEFAULT_PATH = "sample/nmea.txt"
 DEFAULT_PUB_PROJ = "world-fishing-827"
 DEFAULT_PUB_TOPIC = "nmea-stream-dev"
+DEFAULT_FORMAT = "raw"
 DEFAULT_DELIMITER = "\n"
 
 DEFAULT_WORKDIR = "workdir"
@@ -78,6 +79,7 @@ def cli(args):
             Option("--pubsub", type=bool, default=False, help=HELP_PUBSUB),
             Option("--pubsub-project", type=str, default=DEFAULT_PUB_PROJ,  help=HELP_PUB_PROJ),
             Option("--pubsub-topic", type=str, default=DEFAULT_PUB_TOPIC, help=HELP_PUB_TOPIC),
+            Option("--pubsub-data-format", type=str, default=DEFAULT_FORMAT, help=HELP_FORMAT)
         ],
         run=lambda config: receivers.run(**vars(config)),
     )
@@ -90,7 +92,7 @@ def cli(args):
             Option("--splitter", type=str, default="fixed", help=HELP_SPLITTER),
             Option("--first-n", type=int, help=HELP_FIRST_N),
             Option("--delay", type=float, default=1, help=HELP_DELAY),
-            Option("--path", type=str, default=DEFAULT_PATH, help=HELP_PATH),
+            Option("-p", "--path", type=str, default=DEFAULT_PATH, help=HELP_PATH),
         ],
         run=lambda config: transmitters.run(**vars(config)),
     )

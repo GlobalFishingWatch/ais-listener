@@ -5,13 +5,6 @@ from collections import deque
 from typing import Iterable, Generator, List
 
 
-def pretty_print_args(args: dict) -> str:
-    """Returns a dictionary as string, pretty printed."""
-    arg_str = "\n".join(f"  {k}={v}" for k, v in args.items())
-
-    return f"Executing with parameters:\n{arg_str}"
-
-
 # Regex to parse multipart message headers like: $--GPTXT,x,y,z,...
 MULTIPART_REGEX = re.compile(
     r'^!AIVDM,(?P<total>\d+),(?P<part>\d+),(?P<seq_id>[^,]*),'

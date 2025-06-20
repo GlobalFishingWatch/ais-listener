@@ -7,7 +7,7 @@ from socket_listener import assets
 
 
 def _run_cli_in_thread(*args):
-    obj, thread = cli.cli(
+    (obj, thread), config = cli.cli(
         list(args) + ["--daemon-thread"]
     )
     obj.shutdown()

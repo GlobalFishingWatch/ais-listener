@@ -71,29 +71,35 @@ make test
 
 ```shell
 (.venv) $ socket-listener receiver -h
-usage: Socket Listener (v0.1.0). receiver [-h] [-c ] [-w ] [-v] [-l] [--no-rich-logging] [--protocol ] [--host ] [--port ] [--daemon-thread] [--max-packet-size ] [--delimiter ]
-                                          [--ip-client-mapping-file ] [--thread-monitor-delay ] [--pubsub] [--pubsub-project ] [--pubsub-topic ]
+usage: Socket Listener (v0.1.0). (v0.1.0). receiver [-h] [-c] [-v] [--log-file] [--no-rich-logging] [--only-render] [--protocol] [--host] [--port] [--daemon-thread] [--max-packet-size]
+                                                    [--delimiter] [--ip-client-mapping-file] [--thread-monitor-delay] [--pubsub] [--pubsub-project] [--pubsub-topic] [--pubsub-data-format]
 
 options:
-  -h, --help                  show this help message and exit
-  -c  , --config-file         Path to config file. If passed, rest of CLI args are ignored (default: None).
-  -w  , --workdir             Directory to use for saving outputs, logs, and other artifacts.
-  -v, --verbose               Set logger level to DEBUG.
-  -l, --log-to-file           If True, logs will be written to a file.
-  --no-rich-logging           Disable rich logging [useful for production environments].
-  --protocol                  Network protocol to use (default: None).
-  --host                      IP to use (default: None).
-  --port                      Port to use (default: None).
-  --daemon-thread             Run main process in a daemonic thread [Useful for testing].
-  --max-packet-size           The maximum amount of data to be received at once (default: None).
-  --delimiter                 Delimiter to use when splitting incoming packets into messages (default: None).
-  --ip-client-mapping-file    Path to (IP -> client_name) mappings (default: None).
-  --thread-monitor-delay      Number of seconds between each log entry of ThreadMonitor (default: None).
+  -h, --help                 show this help message and exit
 
-Google Pub/Sub sink:
-  --pubsub                    Enable publication to Google PubSub service.
-  --pubsub-project            GCP project id (default: None).
-  --pubsub-topic              Google Pub/Sub topic id (default: None).
+built-in CLI options:
+  -c , --config-file         Path to config file. (default: None)
+  -v, --verbose              Set logger level to DEBUG. (default: False)
+  --log-file                 File to send logging output to. (default: None)
+  --no-rich-logging          Disable rich logging [useful for production environments]. (default: False)
+  --only-render              Dry run, only renders command line call and prints it. (default: False)
+
+options defined by 'Socket Listener (v0.1.0).' command:
+  --protocol                 Network protocol to use. (default: UDP)
+  --host                     IP to use. (default: 0.0.0.0)
+  --port                     Port to use. (default: 10110)
+  --daemon-thread            Run main process in a daemonic thread [Useful for testing]. (default: False)
+
+options defined by 'receiver' command:
+  --max-packet-size          The maximum amount of data to be received at once. (default: 4096)
+  --delimiter                Delimiter to use when splitting incoming packets into messages. (default: 
+                             )
+  --ip-client-mapping-file   Path to (IP -> client_name) mappings. (default: None)
+  --thread-monitor-delay     Number of seconds between each log entry of ThreadMonitor. (default: None)
+  --pubsub                   Enable publication to Google PubSub service. (default: False)
+  --pubsub-project           GCP project id. (default: world-fishing-827)
+  --pubsub-topic             Google Pub/Sub topic id. (default: nmea-stream-dev)
+  --pubsub-data-format       Data format to use for Google Pub/Sub messages. (default: raw)
 ```
 
 Examples:
@@ -111,6 +117,7 @@ delimiter: "\n"
 pubsub: True
 pubsub_project: "world-fishing-827"
 pubsub_topic: "nmea-stream-scratch"
+pubsub_data_format: "raw"
 ```
 
 #### Running within docker

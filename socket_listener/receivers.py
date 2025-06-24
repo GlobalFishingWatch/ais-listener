@@ -8,17 +8,19 @@ to the configured data destinations or sinks.
 import logging
 import threading
 import socketserver
+from typing import Any
 
 from importlib import resources
 from abc import ABC, abstractmethod
 from functools import cached_property
+
+from gfw.common.io import yaml_load
 
 from socket_listener import assets
 
 from .handlers import UDPRequestHandler
 from .monitor import ThreadMonitor
 from .sinks import create_sink
-from .utils import yaml_load
 
 
 logger = logging.getLogger(__name__)
@@ -31,17 +33,31 @@ def run(
     pubsub: bool = False,
     pubsub_project: str = None,
     pubsub_topic: str = None,
+    pubsub_data_format: str = "raw",
     daemon_thread: bool = False,
     **kwargs,
 ):
     """Runs a socket receiver service inside a separate thread.
 
     Args:
-        *args: Positional arguments for socket receiver constructor.
-        pubsub: Enables publication to Google Pub/Sub service.
-        pubsub_project: GCP project id for Pub/Sub integration.
-        pubsub_topic_id: Topic id for Pub/Sub integration.
-        daemon_thread: If true, makes the thread daemonic.
+        *args:
+            Positional arguments for socket receiver constructor.
+
+        pubsub:
+            Enables publication to Google Pub/Sub service.
+
+        pubsub_project:
+            GCP project id for Pub/Sub integration.
+
+        pubsub_topic_id:
+            Topic id for Pub/Sub integration.
+
+        pubsub_data_format:
+            The data format for for Pub/Sub integration.
+
+        daemon_thread:
+            If true, makes the thread daemonic.
+
         **kwargs: Keyword arguments for socket receiver constructor.
 
     Returns:
@@ -49,7 +65,11 @@ def run(
     """
     sinks_config = {}
     if pubsub:
-        sinks_config["google_pubsub"] = dict(project_id=pubsub_project, topic_id=pubsub_topic)
+        sinks_config["google_pubsub"] = dict(
+            project_id=pubsub_project,
+            topic_id=pubsub_topic,
+            data_format=pubsub_data_format,
+        )
 
     try:
         receiver = create(*args, **kwargs, sinks_config=sinks_config)
@@ -82,14 +102,29 @@ class SocketReceiver(ABC):
     A ThreadMonitor object will be logging the number of threads alive every N number of seconds.
 
     Args:
-        poll_interval: Seconds to wait before poll for server shutdown.
-        thread_monitor_delay: Seconds between each log entry with number of active threads.
-        host: The IP address to use.
-        port: The port to use.
-        max_packet_size: The maximum amount of data to be received at once.
-        delimiter: symbol to use as delimiter while splitting packets into messages.
-        sinks: List of sinks in which to publish incoming packets.
-        ip_client_mapping: A mapping (IP -> client_name).
+        poll_interval:
+            Seconds to wait before poll for server shutdown.
+
+        thread_monitor_delay:
+            Seconds between each log entry with number of active threads.
+
+        host:
+            The IP address to use.
+
+        port:
+            The port to use.
+
+        max_packet_size:
+            The maximum amount of data to be received at once.
+
+        delimiter:
+            Symbol to use as delimiter while splitting packets into messages.
+
+        sinks:
+            List of sinks in which to publish incoming packets.
+
+        ip_client_mapping:
+            A mapping (IP -> client_name).
     """
     def __init__(
         self,
@@ -122,14 +157,19 @@ class SocketReceiver(ABC):
 
     @classmethod
     def build(
-        cls, sinks_config: dict = None, ip_client_mapping_file: str = None, **kwargs
+        cls, sinks_config: dict = None, ip_client_mapping_file: str = None, **kwargs: Any
     ) -> 'SocketReceiver':
         """Builds a socket receiver object.
 
         Args:
-            sinks_config: Dictionary with sinks configuration.
-            ip_client_mapping_file: Path to file with ip->clients mappings.
-            **kwargs: keyword arguments for SocketReceiver constructor.
+            sinks_config:
+                Dictionary with sinks configuration.
+
+            ip_client_mapping_file:
+                Path to file with ip->clients mappings.
+
+            **kwargs:
+                keyword arguments for SocketReceiver constructor.
         """
         sinks = [create_sink(n, **v) for n, v in (sinks_config or {}).items()]
 

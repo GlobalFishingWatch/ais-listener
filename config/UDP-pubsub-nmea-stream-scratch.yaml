@@ -6,3 +6,4 @@ delimiter: "\n"
 pubsub: False
 pubsub_project: "world-fishing-827"
 pubsub_topic: "nmea-stream-scratch"
+pubsub_data_format: "raw"

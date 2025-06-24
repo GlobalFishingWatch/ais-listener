@@ -14,23 +14,42 @@ class Packet:
     """Represents an incoming socket packet.
 
     Attributes:
-        time: datetime of the packet reception.
+        time:
+            datetime of the packet reception.
 
     Args:
-        data: Data contained in the packet.
-        protocol: Network protocol used.
-        source_host: IP of the source.
-        source_name: Name of the source.
-        delimiter: Delimiter to use when splitting packet data into messages.
+        data:
+            Raw data contained in the packet.
+
+        protocol:
+            Network protocol used.
+
+        source_host:
+            IP of the source.
+
+        source_name:
+            Name of the source.
+
+        delimiter:
+            Delimiter to use when splitting packet data into messages.
+
+        decode_method:
+            The method to use when trying to decode the packet data.
     """
     data: bytes
     protocol: str = None
     source_host: tuple = None
     source_name: str = "Unknown"
     delimiter: str = "\n"
+    decode_method: str = "utf-8"
 
     def __post_init__(self) -> None:
         self.time = datetime.now(tz=timezone.utc)
+
+    @cached_property
+    def decoded_data(self) -> bool:
+        """Returns the decoded data."""
+        return self.data.decode(self.decode_method)
 
     @cached_property
     def empty(self) -> bool:
@@ -58,10 +77,27 @@ class Packet:
         return sum(1 for _ in self.messages)
 
     @property
-    def messages(self) -> Generator:
-        """Returns generator of messages contained in the packet."""
-        return (
-            line.strip()
-            for line in self.data.decode("utf-8").strip().split(self.delimiter)
-            if line
-        )
+    def messages(self) -> Generator[bytes, None, None]:
+        """Returns generator of messages contained in the packet.
+
+        Tries to decode and split the message into individual parts.
+        If that fails, yields the raw message as bytes.
+        """
+        try:
+            for line in self.decoded_data.strip().split(self.delimiter):
+                if line:
+                    yield line.strip().encode(self.decode_method)
+        except Exception as e:
+            logger.debug("Failed trying to decode or split the packet into messages.")
+            logger.debug(f"Exception: {e}.")
+            logger.debug("Will return a single message with raw data.")
+            yield self.data
+
+    def debug(self):
+        """Logs the packet.
+
+        If can be decoded and splitted, logs each element individually.
+        Otherwise, logs the raw packet.
+        """
+        for m in self.messages:
+            logger.debug(m)

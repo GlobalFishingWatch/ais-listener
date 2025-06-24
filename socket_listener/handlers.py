@@ -32,8 +32,7 @@ class DataPublisherMixIn:
             .format(packet.size, host, packet.source_name, threading.current_thread().name))
 
         if logging.getLogger().level == logging.DEBUG:
-            for m in packet.messages:
-                logger.debug(m)
+            packet.debug()
 
         for sink in self.server.sinks:
             sink.publish(packet)

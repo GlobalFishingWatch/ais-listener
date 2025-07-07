@@ -2,16 +2,14 @@ import time
 import socket
 import threading
 import socketserver
-
 import pytest
 
 from socket_listener import transmitters
-
+from socket_listener.assets import get_sample_data_path
 from tests.conftest import UDPTestHandler
 
-
-NMEA_FILEPATH = "sample/nmea.txt"
-EMPTY_FILEPATH = "sample/empty.txt"
+NMEA_FILEPATH = get_sample_data_path("nmea.txt")
+EMPTY_FILEPATH = get_sample_data_path("empty.txt")
 
 
 @pytest.mark.parametrize(

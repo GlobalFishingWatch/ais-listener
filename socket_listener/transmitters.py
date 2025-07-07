@@ -52,9 +52,14 @@ def open_file(path: Path, mode: str = 'rt', **kwargs: Any):
     """Open a file using gzip.open if it ends with .gz, otherwise use open.
 
     Args:
-        path: A pathlib.Path object pointing to the file.
-        mode: Mode to open the file. Use 'rt' or 'rb' for gzip files.
-        **kwargs: Additional arguments passed to open or gzip.open.
+        path:
+            A pathlib.Path object pointing to the file.
+
+        mode:
+            Mode to open the file. Use 'rt' or 'rb' for gzip files.
+
+        **kwargs:
+            Additional arguments passed to open or gzip.open.
 
     Returns:
         file object: An open file object.
@@ -63,13 +68,26 @@ def open_file(path: Path, mode: str = 'rt', **kwargs: Any):
     return opener(path, mode, **kwargs)
 
 
-def run(path, *args, daemon_thread=False, **kwargs):
+def run(
+    path,
+    *args,
+    daemon_thread=False,
+    unknown_unparsed_args: list = None,
+    unknown_parsed_args: dict = None,
+    **kwargs
+):
     """Runs a socket transmitter service inside a separate thread.
 
     Args:
-        path: the path to the file or folder containing the data to be sent.
-        *args: Positional arguments for socket transmitter constructor.
-        daemon_thread: If true, makes the thread daemonic.
+        path:
+            the path to the file or folder containing the data to be sent.
+
+        *args:
+            Positional arguments for socket transmitter constructor.
+
+        daemon_thread:
+            If true, makes the thread daemonic.
+
         **kwargs: Keyword arguments for socket transmitter constructor.
 
     Returns:

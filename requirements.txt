@@ -16,6 +16,8 @@ deprecated==1.2.18
     # via
     #   opentelemetry-api
     #   opentelemetry-semantic-conventions
+gfw-common==0.1.0rc6
+    # via socket-listener (pyproject.toml)
 google-api-core[grpc]==2.24.0
     # via
     #   google-cloud-core
@@ -61,8 +63,12 @@ idna==3.10
     # via requests
 importlib-metadata==8.5.0
     # via opentelemetry-api
+jinja2==3.1.6
+    # via gfw-common
 markdown-it-py==3.0.0
     # via rich
+markupsafe==3.0.2
+    # via jinja2
 mdurl==0.1.2
     # via markdown-it-py
 opentelemetry-api==1.30.0
@@ -95,13 +101,16 @@ pyasn1-modules==0.4.1
 pygments==2.18.0
     # via rich
 pyyaml==6.0.2
-    # via socket-listener (pyproject.toml)
+    # via
+    #   gfw-common
+    #   socket-listener (pyproject.toml)
 requests==2.32.3
     # via
     #   google-api-core
     #   google-cloud-storage
-rich==13.9.4
+rich==14.0.0
     # via
+    #   gfw-common
     #   rich-argparse
     #   socket-listener (pyproject.toml)
 rich-argparse==1.6.0

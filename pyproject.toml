@@ -50,3 +50,33 @@ socket-listener = "socket_listener.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/GlobalFishingWatch/ais-listener"
+
+[project.optional-dependencies]
+# Linting and code quality tools
+lint = [
+  "black~=25.1",               # Code formatting tool.
+  "isort~=6.0",                # Python imports sorting tool.
+  "mypy~=1.15",                # Static type checker.
+  "pydocstyle~=6.3",           # Python docstring style checker.
+  "ruff~=0.11",                # Linter and code analysis tool.
+  "codespell[toml]~=2.4",      # Spell checker for code.
+  "flake8~=7.0",               # Simple PEP8 checker.
+  "types-PyYAML",              # MyPy stubs for pyyaml.
+]
+
+# Development workflow and tools
+dev = [
+  "pre-commit~=4.2",          # Framework for managing pre-commit hooks.
+  "pip-tools~=7.0",           # Freezing dependencies for production containers.
+  "pip-audit~=2.8",           # Audit for finding vulnerabilities in dependencies.
+  "matplotlib~=3.0",
+  "memory_profiler~=0.6",
+  "snakeviz~=2.0",
+]
+
+# Build tools
+build = [
+  "build~=1.2",             # Python PEP 517 compliant build system.
+  "setuptools~=78.1",       # Python packaging library.
+  "twine~=6.1",             # For uploading Python packages to PyPI.
+]

@@ -35,6 +35,8 @@ def run(
     pubsub_topic: str = None,
     pubsub_data_format: str = "raw",
     daemon_thread: bool = False,
+    unknown_unparsed_args: list = None,
+    unknown_parsed_args: dict = None,
     **kwargs,
 ):
     """Runs a socket receiver service inside a separate thread.

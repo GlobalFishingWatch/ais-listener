@@ -1,18 +1,9 @@
 services:
   gcloud:
     image: google/cloud-sdk:latest
+    volumes:
+      - "gcp:/root/.config/"
     entrypoint: gcloud
-    volumes:
-      - "gcp:/root/.config/"
-
-  shell:
-    build:
-      context: .
-      target: dev
-    volumes:
-      - ".:/opt/project"
-      - "gcp:/root/.config/"
-    entrypoint: /bin/sh
 
   dev:
     build:
@@ -23,29 +14,17 @@ services:
     volumes:
       - ".:/opt/project"
       - "gcp:/root/.config/"
-    entrypoint:  [ "socket-listener", "receiver", "--no-rich-logging" ]
+    entrypoint: /bin/sh
 
   test:
+    # Runs tests using the production Docker image.
+    # Intended to be executed in the GitHub CI environment.
     build:
       context: .
       target: test
     ports:
       - "10110:10110/udp"
-    volumes:
-      - "gcp:/root/.config/"
-    entrypoint:  [ "pytest", "-v" ]
-
-
-  prod:
-    build:
-      context: .
-      target: prod
-    ports:
-      - "10110:10110/udp"
-    volumes:
-      - "gcp:/root/.config/"
-    entrypoint:  [ "socket-listener", "receiver", "-v" ]
-
+    entrypoint: "pytest -v"
 
 volumes:
   gcp:

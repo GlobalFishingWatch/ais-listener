@@ -1,57 +1,61 @@
-FROM python:3.12-alpine AS base
+# ---------------------------------------------------------------------------------------
+# BASE IMAGE
+# ---------------------------------------------------------------------------------------
+FROM python:3.12.10-slim-bookworm AS base
 
-RUN apk update && apk add build-base
-
-# Configure the working directory
-RUN mkdir -p /opt/project
-WORKDIR /opt/project
-
-# Setup a volume for configuration and auth data
+# Setup a volume for configuration and authtentication.
 VOLUME ["/root/.config"]
 
-# Install application dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Update system and install build tools. Remove unneeded stuff afterwards.
+# Upgrade PIP.
+# Create working directory.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc g++ build-essential && \
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --upgrade pip && \
+    mkdir -p /opt/project
+
+# Set working directory.
+WORKDIR /opt/project
 
 EXPOSE 10110/udp
 
-ENTRYPOINT [ "socket-listener"]
+# ---------------------------------------------------------------------------------------
+# DEPENDENCIES IMAGE (installed project dependencies)
+# ---------------------------------------------------------------------------------------
+# We do this first so when we modify code while development, this layer is reused
+# from cache and only the layer installing the package executes again.
+FROM base AS deps
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
 # ---------------------------------------------------------------------------------------
-# PROD
+# PRODUCTION IMAGE
 # ---------------------------------------------------------------------------------------
-FROM base AS prod
+FROM deps AS prod
 
-# Install app package
 COPY . /opt/project
 RUN pip install . && \
     rm -rf /root/.cache/pip && \
     rm -rf /opt/project/*
 
+ENTRYPOINT [ "socket-listener"]
+
 # ---------------------------------------------------------------------------------------
-# DEV
+# DEVELOPMENT IMAGE (editable install and development tools)
 # ---------------------------------------------------------------------------------------
-FROM base AS dev
+FROM deps AS dev
 
-COPY ./requirements/dev.txt .
-COPY ./requirements/test.txt .
-
-RUN pip install --no-cache-dir -r dev.txt
-RUN pip install --no-cache-dir -r test.txt
-
-# Install app package
 COPY . /opt/project
-RUN pip install -e .
+RUN pip install -e .[lint,dev,build]
 
 # ---------------------------------------------------------------------------------------
 # TEST IMAGE (This checks that package is properly installed in prod image)
 # ---------------------------------------------------------------------------------------
 FROM prod AS test
 
-COPY ./config /opt/project/config
-COPY ./sample /opt/project/sample
+COPY ./requirements-test.txt /opt/project/
+RUN pip install -r requirements-test.txt
 
 COPY ./tests /opt/project/tests
-COPY ./requirements/test.txt /opt/project/
-
-RUN pip install -r test.txt
+COPY ./config /opt/project/config

@@ -9,7 +9,7 @@ from gfw.common.cli import CLI, Option, ParametrizedCommand
 from socket_listener import receivers
 from socket_listener import transmitters
 from socket_listener.version import __version__
-
+from socket_listener.assets import get_sample_data_path
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ HELP_SPLITTER = "Function to use for splitting the input files into chunks."
 HELP_FIRST_N = "Only send the first n messages of the file and then stop.."
 
 DEFAULT_PROTOCOL = "UDP"
-DEFAULT_PATH = "sample/nmea.txt"
+DEFAULT_PATH = get_sample_data_path("nmea.txt")
 DEFAULT_PUB_PROJ = "world-fishing-827"
 DEFAULT_PUB_TOPIC = "nmea-stream-dev"
 DEFAULT_FORMAT = "raw"

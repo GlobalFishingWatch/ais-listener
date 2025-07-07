@@ -1,3 +1,5 @@
+import pytest
+
 from socket_listener.utils import chunked_nmea_it
 
 
@@ -45,21 +47,14 @@ def test_partial_multipart_at_end_is_flushed():
     assert packets[1] == ["!AIVDM,2,2,xyz,A,part2,0"]
 
 
-def test_ignores_empty_and_invalid_lines():
+def test_fails_with_invalid_lines():
     lines = [
-        "  ",  # empty
         "garbage",  # invalid
         "!AIVDM,1,1,,A,single1,0",
-        "more garbage",
-        "!AIVDM,1,1,,A,single2,0",
     ]
-    packets = list(chunked_nmea_it(lines, max_lines_per_packet=2))
 
-    assert len(packets) == 1
-    assert packets[0] == [
-        "!AIVDM,1,1,,A,single1,0",
-        "!AIVDM,1,1,,A,single2,0"
-    ]
+    with pytest.raises(ValueError, match="Line with NMEA prefix not recognized"):
+        list(chunked_nmea_it(lines))
 
 
 def test_multiple_multipart_sequences_in_one_packet():
@@ -72,3 +67,24 @@ def test_multiple_multipart_sequences_in_one_packet():
     packets = list(chunked_nmea_it(lines, max_lines_per_packet=10))
     assert len(packets) == 1
     assert packets[0] == lines
+
+
+def test_chunked_nmea_it_preserves_lines():
+    # Sample input with different prefixes and both single and multipart messages
+    input_lines = [
+        r"\s:r1,t:test,c:1*00\!AIVDM,1,1,,A,test1,0*00",
+        r"\s:r2,t:test,c:2*00\!ABVDM,2,1,1,B,test2-part1,0*00",
+        r"\s:r2,t:test,c:2*00\!ABVDM,2,2,1,B,test2-part2,0*00",
+        r"\s:r3,t:test,c:3*00\!BSVDO,1,1,,A,test3,0*00",
+        r"\s:r4,t:test,c:4*00\!ANVDM,1,1,,B,test4,0*00",
+        r"\s:r5,t:test,c:5*00\!AIVDO,2,1,2,A,test5-part1,0*00",
+        r"\s:r5,t:test,c:5*00\!AIVDO,2,2,2,A,test5-part2,0*00",
+    ]
+
+    # Reconstruct the lines from the chunked output
+    output_lines = [
+        line for packet
+        in chunked_nmea_it(input_lines, max_lines_per_packet=20) for line in packet]
+
+    # Assert all original lines are present and in the same order
+    assert output_lines == input_lines

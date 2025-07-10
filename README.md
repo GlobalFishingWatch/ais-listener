@@ -21,21 +21,36 @@ A service that receives messages through network sockets and publish them to des
 [pyproject.toml]: pyproject.toml
 [requirements.txt]: requirements.txt
 
+[PubSub sink]: socket_listener/sinks/pubsub.py
+
 ## Introduction
 
 <div align="justify">
 
-The original motivation for this service
-was the ingestion of AIS messages needed by GFW data pipelines.
-We have generalized this functionality for any desired network protocols,
-data sources and destinations.
+The original motivation for this service was to support
+the ingestion of AIS messages required by GFW data pipelines.
+Since then, we have generalized the functionality to support arbitrary network protocols, data sources, and destinations.
+We intentionally keep the server **thin and focused solely on ingestion**,
+without performing any parsing or transformation of the input data.
+All decoding and processing is deferred to downstream pipelines,
+allowing for greater flexibility and scalability.
 
 </div>
 
 > [!NOTE]
-> Currently, we support the following:
-> Protocols: [**UDP**]
-> Desitnations: [**PubSub**]
+> **Currently supported options:**
+>
+> - 📡 **Protocols**: `UDP`.
+> - 🎯 **Destinations**: `PubSub`.
+
+## PubSub
+
+The [PubSub sink] supports two modes, controlled by the `pubsub-data-format` parameter:
+
+- **`raw`**: The entire socket packet is published as-is in a single **PubSub** message.
+- **`split`**: The socket packet is split using a configurable `delimiter`,
+  and each component is published as a separate **PubSub** message.
+
 
 ## Usage
 
@@ -108,7 +123,7 @@ Example of configuration file for the receiver command:
 ```yaml
 protocol: UDP
 port: 10110
-max_packet_size: 65536
+max_packet_size: 4096
 daemon_thread: False
 delimiter: "\n"
 pubsub: True
@@ -156,6 +171,13 @@ If you want to upgrade all dependencies to latest compatible versions, just run:
 make reqs-upgrade
 ```
 </div>
+
+> [!IMPORTANT]
+> Do not modify [requirements.txt] manually.
+
+> [!NOTE]
+> Remember that if you change the [requirements.txt],
+you need to rebuild the docker image (`make docker-build`) in order to use it locally.
 
 ### How to deploy
 

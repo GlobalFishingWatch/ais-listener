@@ -1,0 +1,4 @@
+protocol: UDP
+port: 10110
+max_packet_size: 4096
+daemon_thread: True

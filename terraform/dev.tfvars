@@ -1,0 +1,8 @@
+basename="ais-listener"
+gfw_project_name="ais-listener"
+environment="dev"
+blame="paul"
+resource_creator="paul"
+project="skytruth-pelagos-production"
+region="us-east1"
+zone="us-central1-f"

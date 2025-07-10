@@ -1,30 +1,29 @@
-version: '3.9'
 services:
-  server:
-    entrypoint:  [ "python", "-u", "main.py", "-vv", "server" ]
+  gcloud:
+    image: google/cloud-sdk:latest
+    volumes:
+      - "gcp:/root/.config/"
+    entrypoint: gcloud
+
+  dev:
+    build:
+      context: .
+      target: dev
     ports:
       - "10110:10110/udp"
-    build:
-      context: .
     volumes:
-      - ".:/opt/code"
+      - ".:/opt/project"
       - "gcp:/root/.config/"
 
-  gcloud:
-    entrypoint: gcloud
+  test:
+    # Runs tests using the production Docker image.
+    # Intended to be executed in the GitHub CI environment.
     build:
       context: .
-    volumes:
-      - ".:/opt/code"
-      - "gcp:/root/.config/"
-
-  bash:
-    entrypoint: /bin/bash
-    build:
-      context: .
-    volumes:
-      - ".:/opt/code"
-      - "gcp:/root/.config/"
+      target: test
+    ports:
+      - "10110:10110/udp"
+    entrypoint: "pytest -v"
 
 volumes:
   gcp:

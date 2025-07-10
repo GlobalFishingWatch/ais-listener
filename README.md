@@ -1,103 +1,186 @@
-# AIS Listener
+<h1 align="center" style="border-bottom: none;"> socket-listener </h1>
 
-A UDP listener that receives NMEA-encoded AIS messages via UDP and writes them to GCS
+<p align="center">
+  <a href="https://codecov.io/gh/GlobalFishingWatch/ais-listener" > 
+    <img src="https://codecov.io/gh/GlobalFishingWatch/ais-listener/branch/dev/graph/badge.svg?token=VrsRdRuei9"/> 
+  </a>
+  <a>
+    <img alt="Python versions" src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue">
+  </a>
+  <a>
+    <img alt="Docker Engine version" src="https://img.shields.io/badge/DockerEngine-v27-yellow">
+  </a>
+  <a>
+    <img alt="Last release" src="https://img.shields.io/github/v/release/GlobalFishingWatch/ais-listener">
+  </a>
+</p>
+
+A service that receives messages through network sockets and publish them to desired destinations.
+
+[pip-tools]: https://pip-tools.readthedocs.io/en/stable/
+[pyproject.toml]: pyproject.toml
+[requirements.txt]: requirements.txt
+
+[PubSub sink]: socket_listener/sinks/pubsub.py
 
 ## Introduction
 
-This is a dockerized micro service that provides a UDP server which will listen on a range of UDP ports for NMEA
-data streams.  A tagblock is added or updated to include a timestamp, source and station, and the resulting 
-messages are written in the order received to a sharded and gzipped GCS file
+<div align="justify">
 
-To run the server and listen on localhost to udp ports 10110, 10111, 10112
+The original motivation for this service was to support
+the ingestion of AIS messages required by GFW data pipelines.
+Since then, we have generalized the functionality to support arbitrary network protocols, data sources, and destinations.
+We intentionally keep the server **thin and focused solely on ingestion**,
+without performing any parsing or transformation of the input data.
+All decoding and processing is deferred to downstream pipelines,
+allowing for greater flexibility and scalability.
 
-```console
-python main.py -v server \
-   --udp-port-range 10110 10112 \
-   --gcs-dir gs://my_bucket/some_dir/ \
-   --source-port-map gs://my_bucket/source-port-map.yaml
+</div>
+
+> [!NOTE]
+> **Currently supported options:**
+>
+> - 📡 **Protocols**: `UDP`.
+> - 🎯 **Destinations**: `PubSub`.
+
+## PubSub
+
+The [PubSub sink] supports two modes, controlled by the `pubsub-data-format` parameter:
+
+- **`raw`**: The entire socket packet is published as-is in a single **PubSub** message.
+- **`split`**: The socket packet is split using a configurable `delimiter`,
+  and each component is published as a separate **PubSub** message.
+
+
+## Usage
+
+### Installation
+
+First, clone the repository.
+
+Make sure you can build the docker image:
+```shell
+make docker-build
+```
+In order to be able to connect to BigQuery, authenticate and configure the project:
+```shell
+make docker-gcp
+```
+Create virtual environment and activate it:
+```shell
+python -m venv .venv
+./.venv/bin/activate
+```
+Install dependencies and the python package:
+```shell
+make install-all
+```
+Make sure you can run unit tests:
+```shell
+make test
 ```
 
-The server will listen to all the UDP ports in the range.  To listen on just one port, use the same value for 
-start and end.
+### Using the CLI
 
-Output files will be written in the given GCS directory in a sub directory by date.  Files are sharded every 5 minutes by default, and the 
-file name is formatted
+```shell
+(.venv) $ socket-listener receiver -h
+usage: socket-listener (v0.1.0). (v0.1.0). receiver [-h] [-c] [-v] [--log-file] [--no-rich-logging] [--only-render] [--protocol] [--host] [--port] [--daemon-thread] [--max-packet-size]
+                                                    [--delimiter] [--ip-client-mapping-file] [--thread-monitor-delay] [--pubsub] [--pubsub-project] [--pubsub-topic] [--pubsub-data-format]
 
-`[GCS_DIR/[YYYYMMDD]/][source]_[YYYYMMDD]_[HHMMSS]_[uuid].nmea.gz`
+options:
+  -h, --help                 show this help message and exit
 
-The source is the source label from `source-port-map` that is mapped to the UDP port that receives the message 
+built-in CLI options:
+  -c , --config-file         Path to config file. (default: None)
+  -v, --verbose              Set logger level to DEBUG. (default: False)
+  --log-file                 File to send logging output to. (default: None)
+  --no-rich-logging          Disable rich logging [useful for production environments]. (default: False)
+  --only-render              Dry run, only renders command line call and prints it. (default: False)
 
-An example source-port-map file is in sample/sources.yaml
+options defined by 'socket-listener (v0.1.0).' command:
+  --protocol                 Network protocol to use. (default: UDP)
+  --host                     IP to use. (default: 0.0.0.0)
+  --port                     Port to use. (default: 10110)
+  --daemon-thread            Run main process in a daemonic thread [Useful for testing]. (default: False)
 
-There is also a client that can be used for testing.  All it does is read messages from a file and send them to a 
-designated UDP port.
-
-Running this in the project folder will read values from `sample/nmea.txt` and send to `localhost:10110`
-
-```console
-python main.py -v client
+options defined by 'receiver' command:
+  --max-packet-size          The maximum amount of data to be received at once. (default: 4096)
+  --delimiter                Delimiter to use when splitting incoming packets into messages. (default: None)
+  --ip-client-mapping-file   Path to (IP -> client_name) mappings. (default: None)
+  --thread-monitor-delay     Number of seconds between each log entry of ThreadMonitor. (default: None)
+  --pubsub                   Enable publication to Google PubSub service. (default: False)
+  --pubsub-project           GCP project id. (default: world-fishing-827)
+  --pubsub-topic             Google Pub/Sub topic id. (default: nmea-stream-dev)
+  --pubsub-data-format       Data format to use for Google Pub/Sub messages. (default: raw)
 ```
 
-You can run the server and the client locally and the client should send messages to the server.   Use `-v` for 
-verbose output and both client and server should print every message to the console.
-
-## Developing 
-To set up the development environment
-```commandline
-virtualenv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-## Repository structure
-
-The following are important files and folders in the repository:
-
-* `requirements.txt`: Like for any standard python package, this file contains any python dependencies you need installed in your docker container for your pipeline to work. These dependencies are automatically installed when you run `docker-compose build`.
-* `main.py`: This is the application entry point.   This mostly just deals with parsing command line parameters and then passing control off to pipeline.py
-* `pipeline.py`: This is where the work is done. See the example pipeline code as a guide for how to structure this
-* `util/`: This folder contains some utility modules.
-
-## Unit tests
-There are a few unit tests, but most of the code is not covered.   Run the tests with 
-
-```console
-pytest tests
+Examples:
+```shell
+socket-listener receiver --protocol UDP --port 10112 --max-packet-size 4096
 ```
 
-## Build and Deploy
-This tool is designed to be run in a GCE instance as a docker image.   
-
-### Docker setup
-
-We use a dockerized development environment, so you will need [docker](https://www.docker.com/)  and [docker-compose](https://docs.docker.com/compose/) on your machine . We also need the [google cloud sdk](https://cloud.google.com/sdk/) installed locally to generate the authorization files that will be used to authorize access to google cloud services. No other dependencies are required in your machine.
-
-To setup google cloud sdk authorization, follow these steps:
-
-* Make sure to have a working google cloud sdk installation, and that you've logged in.
-
-* Configure docker to use google cloud to authorize access to our base images by running `gcloud auth configure-docker`.
-
-* Create a docker volume named `gcp` to store the google cloud credentials that docker will use by running `docker volume create --name gcp`. This volume will be shared by all your pipeline repositories, so you need to run this only once.
-
-* Setup GCP authorization inside docker by running `docker-compose run --rm gcloud --project=world-fishing-827 auth application-default login` and following the instructions.
-
-For convenience, there are some shell scripts for building and running using `docker compose`
-+ `build.sh`    This will run `docker compose build` and pass in some extra info on the current git commit
-+ `cloud-build.sh` This will do a manual cloud build and publish the docker container to the cloud registry
-
-
-### Running within docker
-To run in docker, displaying the server's command line parameters 
-```console
-docker compose run --rm server --help
+Example of configuration file for the receiver command:
+```yaml
+protocol: UDP
+port: 10110
+max_packet_size: 4096
+daemon_thread: False
+delimiter: "\n"
+pubsub: True
+pubsub_project: "world-fishing-827"
+pubsub_topic: "nmea-stream-scratch"
+pubsub_data_format: "raw"
 ```
-Note that the first time you do this, docker will build the image for you. This will take a minute...
 
-### Deploy
-Pushing a commit to the main branch will automatically trigger a cloud build.  You can use `cloud-build.sh` 
-to manually trigger a build. 
+#### Running within docker
 
-Deploy the docker container in a GCP instance, configure command line parameters, assign an external IP, 
-and open the UDP ports in the firewall.  
+To run in docker with development docker image:
+```shell
+docker compose run --rm dev receiver -c config/UDP-pubsub-nmea-stream-scratch.yaml
+```
 
-Use the client app to test
+## Development
+
+A socket _**transmitter**_ object exists that can be used for testing.
+
+For example:
+```shell
+socket-listener transmitter -p PATH_TO_FILE_OR_DIR --chunk-size 600 --delay 0.5
+```
+
+### Updating dependencies
+
+<div align="justify">
+
+The [requirements.txt] file contains all transitive dependencies pinned to specific versions.
+It is automatically generated using [pip-tools],
+based on the dependencies specified in [pyproject.toml].
+This process ensures reproducibility,
+allowing the application to run consistently across different environments.
+
+Use [pyproject.toml] to define high-level dependencies with flexible version constraints
+(e.g., ~=1.2, >=1.0, <2.0, ...).
+
+To re-compile dependencies, just run
+```shell
+make reqs
+```
+
+If you want to upgrade all dependencies to latest compatible versions, just run:
+```shell
+make reqs-upgrade
+```
+</div>
+
+> [!IMPORTANT]
+> Do not modify [requirements.txt] manually.
+
+> [!NOTE]
+> Remember that if you change the [requirements.txt],
+you need to rebuild the docker image (`make docker-build`) in order to use it locally.
+
+### How to deploy
+
+A Google Cloud build that publishes a Docker image is triggered in the following cases:  
+- When a commit is merged into `main`.  
+- When a new tag is created.

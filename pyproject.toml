@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+# Build system metadata.
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["socket_listener", "socket_listener.*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"assets" = ["*"]
+
+[project]
+name = "socket-listener"
+version = "0.1.0"
+description = "A service that receives messages through network sockets and publish them to desired destinations."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Paul Woods.", email = "paul@globalfishingwatch.org"},
+    { name = "Tomás J. Link", email = "tomas.link@globalfishingwatch.org" },
+]
+maintainers = [
+    { name = "Paul Woods.", email = "paul@globalfishingwatch.org"},
+    { name = "Tomás J. Link", email = "tomas.link@globalfishingwatch.org" },
+]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+requires-python = ">= 3.9"
+dependencies = [
+    "cloudpathlib[gs]~=0.20",
+    "gfw-common~=0.1.0rc3",
+    "google-cloud-pubsub~=2.28",
+    "pyyaml~=6.0",
+    "rich~=14.0",
+    "rich-argparse~=1.6",
+]
+
+[project.scripts]
+socket-listener = "socket_listener.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/GlobalFishingWatch/ais-listener"
+
+[project.optional-dependencies]
+# Linting and code quality tools
+lint = [
+  "black~=25.1",               # Code formatting tool.
+  "isort~=6.0",                # Python imports sorting tool.
+  "mypy~=1.15",                # Static type checker.
+  "pydocstyle~=6.3",           # Python docstring style checker.
+  "ruff~=0.11",                # Linter and code analysis tool.
+  "codespell[toml]~=2.4",      # Spell checker for code.
+  "flake8~=7.0",               # Simple PEP8 checker.
+  "types-PyYAML",              # MyPy stubs for pyyaml.
+]
+
+# Development workflow and tools
+dev = [
+  "pre-commit~=4.2",          # Framework for managing pre-commit hooks.
+  "pip-tools~=7.0",           # Freezing dependencies for production containers.
+  "pip-audit~=2.8",           # Audit for finding vulnerabilities in dependencies.
+  "matplotlib~=3.0",
+  "memory_profiler~=0.6",
+  "snakeviz~=2.0",
+]
+
+# Build tools
+build = [
+  "build~=1.2",             # Python PEP 517 compliant build system.
+  "setuptools~=78.1",       # Python packaging library.
+  "twine~=6.1",             # For uploading Python packages to PyPI.
+]

@@ -35,7 +35,7 @@ docker-ci-test:
 
 .PHONY: docker-shell ## Enters to docker container shell.
 docker-shell:
-	docker compose run --rm -it ${DOCKER_DEV_SERVICE}
+	docker compose run --rm -it --entrypoint /bin/bash ${DOCKER_DEV_SERVICE}
 
 .PHONY: reqs  ## Compiles requirements.txt with pip-tools.
 reqs:

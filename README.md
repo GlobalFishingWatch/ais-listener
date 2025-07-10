@@ -1,11 +1,11 @@
-<h1 align="center" style="border-bottom: none;"> Socket Listener </h1>
+<h1 align="center" style="border-bottom: none;"> socket-listener </h1>
 
 <p align="center">
   <a href="https://codecov.io/gh/GlobalFishingWatch/ais-listener" > 
     <img src="https://codecov.io/gh/GlobalFishingWatch/ais-listener/branch/dev/graph/badge.svg?token=VrsRdRuei9"/> 
   </a>
   <a>
-    <img alt="Python versions" src="https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
+    <img alt="Python versions" src="https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue">
   </a>
   <a>
     <img alt="Docker Engine version" src="https://img.shields.io/badge/DockerEngine-v27-yellow">
@@ -20,8 +20,6 @@ A service that receives messages through network sockets and publish them to des
 [pip-tools]: https://pip-tools.readthedocs.io/en/stable/
 [pyproject.toml]: pyproject.toml
 [requirements.txt]: requirements.txt
-[sample/sources.yaml]: sample/sources.yaml
-[sample/nmea.txt]: sample/nmea.txt
 
 ## Introduction
 
@@ -35,13 +33,13 @@ data sources and destinations.
 </div>
 
 > [!NOTE]
-> Currently, only **UDP** protocol is supported.
+> Currently, we support the following:
+> Protocols: [**UDP**]
+> Desitnations: [**PubSub**]
 
 ## Usage
 
 ### Installation
-
-We still don't have a package in PYPI.
 
 First, clone the repository.
 
@@ -60,7 +58,7 @@ python -m venv .venv
 ```
 Install dependencies and the python package:
 ```shell
-make install
+make install-all
 ```
 Make sure you can run unit tests:
 ```shell
@@ -71,7 +69,7 @@ make test
 
 ```shell
 (.venv) $ socket-listener receiver -h
-usage: Socket Listener (v0.1.0). (v0.1.0). receiver [-h] [-c] [-v] [--log-file] [--no-rich-logging] [--only-render] [--protocol] [--host] [--port] [--daemon-thread] [--max-packet-size]
+usage: socket-listener (v0.1.0). (v0.1.0). receiver [-h] [-c] [-v] [--log-file] [--no-rich-logging] [--only-render] [--protocol] [--host] [--port] [--daemon-thread] [--max-packet-size]
                                                     [--delimiter] [--ip-client-mapping-file] [--thread-monitor-delay] [--pubsub] [--pubsub-project] [--pubsub-topic] [--pubsub-data-format]
 
 options:
@@ -84,7 +82,7 @@ built-in CLI options:
   --no-rich-logging          Disable rich logging [useful for production environments]. (default: False)
   --only-render              Dry run, only renders command line call and prints it. (default: False)
 
-options defined by 'Socket Listener (v0.1.0).' command:
+options defined by 'socket-listener (v0.1.0).' command:
   --protocol                 Network protocol to use. (default: UDP)
   --host                     IP to use. (default: 0.0.0.0)
   --port                     Port to use. (default: 10110)
@@ -92,8 +90,7 @@ options defined by 'Socket Listener (v0.1.0).' command:
 
 options defined by 'receiver' command:
   --max-packet-size          The maximum amount of data to be received at once. (default: 4096)
-  --delimiter                Delimiter to use when splitting incoming packets into messages. (default: 
-                             )
+  --delimiter                Delimiter to use when splitting incoming packets into messages. (default: None)
   --ip-client-mapping-file   Path to (IP -> client_name) mappings. (default: None)
   --thread-monitor-delay     Number of seconds between each log entry of ThreadMonitor. (default: None)
   --pubsub                   Enable publication to Google PubSub service. (default: False)
@@ -107,7 +104,7 @@ Examples:
 socket-listener receiver --protocol UDP --port 10112 --max-packet-size 4096
 ```
 
-Example of configuration file:
+Example of configuration file for the receiver command:
 ```yaml
 protocol: UDP
 port: 10110
@@ -122,9 +119,9 @@ pubsub_data_format: "raw"
 
 #### Running within docker
 
-To run in docker:
+To run in docker with development docker image:
 ```shell
-docker compose run --rm dev -c config/UDP-pubsub-nmea-stream-dev.yaml
+docker compose run --rm dev receiver -c config/UDP-pubsub-nmea-stream-scratch.yaml
 ```
 
 ## Development
@@ -138,24 +135,30 @@ socket-listener transmitter -p PATH_TO_FILE_OR_DIR --chunk-size 600 --delay 0.5
 
 ### Updating dependencies
 
-The [requirements.txt] contains all transitive dependencies pinned to specific versions.
-This file is compiled automatically with [pip-tools], based on [pyproject.toml].
+<div align="justify">
 
-Use [pyproject.toml] to specify high-level dependencies with some restrictions.
-Do not modify [requirements.txt] manually.
+The [requirements.txt] file contains all transitive dependencies pinned to specific versions.
+It is automatically generated using [pip-tools],
+based on the dependencies specified in [pyproject.toml].
+This process ensures reproducibility,
+allowing the application to run consistently across different environments.
+
+Use [pyproject.toml] to define high-level dependencies with flexible version constraints
+(e.g., ~=1.2, >=1.0, <2.0, ...).
 
 To re-compile dependencies, just run
 ```shell
 make reqs
 ```
 
-If you want to upgrade all dependencies to latest available versions
-(compatible with restrictions declared), just run:
+If you want to upgrade all dependencies to latest compatible versions, just run:
 ```shell
 make reqs-upgrade
 ```
+</div>
 
 ### How to deploy
 
-Pushing a commit to the master or dev branches
-will automatically trigger a Google Cloud build and the docker image will be published.
+A Google Cloud build that publishes a Docker image is triggered in the following cases:  
+- When a commit is merged into `main`.  
+- When a new tag is created.

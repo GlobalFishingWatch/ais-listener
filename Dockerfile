@@ -20,6 +20,8 @@ WORKDIR /opt/project
 
 EXPOSE 10110/udp
 
+ENTRYPOINT ["socket-listener"]
+
 # ---------------------------------------------------------------------------------------
 # DEPENDENCIES IMAGE (installed project dependencies)
 # ---------------------------------------------------------------------------------------
@@ -39,7 +41,6 @@ RUN pip install . && \
     rm -rf /root/.cache/pip && \
     rm -rf /opt/project/*
 
-ENTRYPOINT [ "socket-listener"]
 
 # ---------------------------------------------------------------------------------------
 # DEVELOPMENT IMAGE (editable install and development tools)

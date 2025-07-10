@@ -14,7 +14,6 @@ services:
     volumes:
       - ".:/opt/project"
       - "gcp:/root/.config/"
-    entrypoint: /bin/sh
 
   test:
     # Runs tests using the production Docker image.

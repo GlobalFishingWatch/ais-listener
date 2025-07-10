@@ -14,7 +14,7 @@ from socket_listener.assets import get_sample_data_path
 logger = logging.getLogger(__name__)
 
 
-NAME_TPL = "Socket Listener (v{version})."
+NAME_TPL = "socket-listener (v{version})."
 DESCRIPTION = (
     "A service that receives messages through network sockets "
     "and publish them to desired destinations."
@@ -49,11 +49,10 @@ HELP_SPLITTER = "Function to use for splitting the input files into chunks."
 HELP_FIRST_N = "Only send the first n messages of the file and then stop.."
 
 DEFAULT_PROTOCOL = "UDP"
-DEFAULT_PATH = get_sample_data_path("nmea.txt")
+DEFAULT_PATH = str(get_sample_data_path("nmea.txt"))
 DEFAULT_PUB_PROJ = "world-fishing-827"
 DEFAULT_PUB_TOPIC = "nmea-stream-dev"
 DEFAULT_FORMAT = "raw"
-DEFAULT_DELIMITER = "\n"
 
 DEFAULT_WORKDIR = "workdir"
 
@@ -73,7 +72,7 @@ def cli(args):
         description=HELP_RECEIVER,
         options=[
             Option("--max-packet-size", type=int, default=4096, help=HELP_MAX_PACKET_SIZE),
-            Option("--delimiter", type=str, default=DEFAULT_DELIMITER, help=HELP_DELIMITER),
+            Option("--delimiter", type=str, default=None, help=HELP_DELIMITER),
             Option("--ip-client-mapping-file", type=str, help=HELP_IP_CLIENT_MAPPING_FILE),
             Option("--thread-monitor-delay", type=float, help=HELP_MONITOR_DELAY),
             Option("--pubsub", type=bool, default=False, help=HELP_PUBSUB),
@@ -101,6 +100,7 @@ def cli(args):
         name=NAME_TPL.format(version=__version__),
         description=DESCRIPTION,
         version=__version__,
+        formatter=formatter(),
         examples=[
             "socket-listener -h",
             "socket-listener receiver --pubsub",

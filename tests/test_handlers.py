@@ -22,7 +22,7 @@ def test_udp_handler_publishes_packet(test_data, test_address, caplog):
     # Create a mock sink and spy on its publish method
     mock_sink = mock.Mock(spec=GooglePubSub)
     receiver = UDPSocketReceiver(sinks=[mock_sink])
-    receiver.server.ip_client_mapping = {test_address[0]: "TestSource"}
+    receiver.server.provider_name = "TestSource"
     receiver.server.delimiter = "\n"
 
     # Patch logging level to DEBUG to test packet.debug()
@@ -54,7 +54,6 @@ def test_udp_handler_publishes_packet(test_data, test_address, caplog):
 def test_udp_handler_unknown_source(test_data, test_address):
     mock_sink = mock.Mock(spec=GooglePubSub)
     receiver = UDPSocketReceiver(sinks=[mock_sink])
-    receiver.server.ip_client_mapping = {}  # Unknown IP
     receiver.server.delimiter = "\n"
 
     handler = UDPRequestHandler((test_data, None), test_address, receiver.server)

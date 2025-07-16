@@ -23,13 +23,13 @@ class DataPublisherMixIn:
             data,
             protocol=self.protocol,
             source_host=host,
-            source_name=self.server.ip_client_mapping.get(host, "Unknown"),
+            source_name=self.server.provider_name,
             delimiter=self.server.delimiter
         )
 
         logger.debug(
-            "Received {} message(s) from {} ({}) in {}."
-            .format(packet.size, host, packet.source_name, threading.current_thread().name))
+            "Received {} message(s) from '{}' in {}."
+            .format(packet.size, packet.source_name, threading.current_thread().name))
 
         if logging.getLogger().level == logging.DEBUG:
             packet.debug()

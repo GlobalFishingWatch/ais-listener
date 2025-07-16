@@ -33,7 +33,7 @@ HELP_RECEIVER = "Receives data continuosly from network sockets."
 HELP_CONFIG_FILE = "Path to config file. If passed, rest of CLI args are ignored."
 HELP_MAX_PACKET_SIZE = "The maximum amount of data to be received at once."
 HELP_DELIMITER = "Delimiter to use when splitting incoming packets into messages."
-HELP_IP_CLIENT_MAPPING_FILE = "Path to (IP -> client_name) mappings."
+HELP_PROVIDER_NAME = "Provider name to use in the metadata of ingested messages."
 HELP_MONITOR_DELAY = "Number of seconds between each log entry of ThreadMonitor."
 
 HELP_PUBSUB = "Enable publication to Google PubSub service."
@@ -73,8 +73,8 @@ def cli(args):
         options=[
             Option("--max-packet-size", type=int, default=4096, help=HELP_MAX_PACKET_SIZE),
             Option("--delimiter", type=str, default=None, help=HELP_DELIMITER),
-            Option("--ip-client-mapping-file", type=str, help=HELP_IP_CLIENT_MAPPING_FILE),
             Option("--thread-monitor-delay", type=float, help=HELP_MONITOR_DELAY),
+            Option("--provider-name", type=str, help=HELP_PROVIDER_NAME),
             Option("--pubsub", type=bool, default=False, help=HELP_PUBSUB),
             Option("--pubsub-project", type=str, default=DEFAULT_PUB_PROJ,  help=HELP_PUB_PROJ),
             Option("--pubsub-topic", type=str, default=DEFAULT_PUB_TOPIC, help=HELP_PUB_TOPIC),

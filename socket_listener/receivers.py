@@ -10,13 +10,8 @@ import threading
 import socketserver
 from typing import Any
 
-from importlib import resources
 from abc import ABC, abstractmethod
 from functools import cached_property
-
-from gfw.common.io import yaml_load
-
-from socket_listener import assets
 
 from .handlers import UDPRequestHandler
 from .monitor import ThreadMonitor
@@ -24,8 +19,6 @@ from .sinks import create_sink
 
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_IP_CLIENT_MAPPING_FILE = "ip-client-mapping.yaml"
 
 
 def run(
@@ -125,8 +118,8 @@ class SocketReceiver(ABC):
         sinks:
             List of sinks in which to publish incoming packets.
 
-        ip_client_mapping:
-            A mapping (IP -> client_name).
+        provider_name:
+            Provider name to use in the metadata.
     """
     def __init__(
         self,
@@ -137,7 +130,7 @@ class SocketReceiver(ABC):
         max_packet_size: int = 4096,
         delimiter: str = "\n",
         sinks=(),
-        ip_client_mapping: dict = None,
+        provider_name: str = "Unknown",
     ) -> None:
 
         self._poll_interval = poll_interval
@@ -150,7 +143,7 @@ class SocketReceiver(ABC):
         self._server.max_packet_size = max_packet_size
         self._server.delimiter = delimiter
         self._server.sinks = sinks
-        self._server.ip_client_mapping = ip_client_mapping or {}
+        self._server.provider_name = provider_name
 
     @staticmethod
     @abstractmethod
@@ -158,30 +151,19 @@ class SocketReceiver(ABC):
         """Instantiates a socketserver object."""
 
     @classmethod
-    def build(
-        cls, sinks_config: dict = None, ip_client_mapping_file: str = None, **kwargs: Any
-    ) -> 'SocketReceiver':
+    def build(cls, sinks_config: dict = None, **kwargs: Any) -> 'SocketReceiver':
         """Builds a socket receiver object.
 
         Args:
             sinks_config:
                 Dictionary with sinks configuration.
 
-            ip_client_mapping_file:
-                Path to file with ip->clients mappings.
-
             **kwargs:
                 keyword arguments for SocketReceiver constructor.
         """
         sinks = [create_sink(n, **v) for n, v in (sinks_config or {}).items()]
 
-        if ip_client_mapping_file is None:
-            ip_client_mapping_file = str(resources.files(assets) / DEFAULT_IP_CLIENT_MAPPING_FILE)
-
-        logger.info(f"Loading (IP -> clients_name) mapping from {ip_client_mapping_file}.")
-        ip_client_mapping = yaml_load(ip_client_mapping_file)
-
-        return cls(sinks=sinks, ip_client_mapping=ip_client_mapping, **kwargs)
+        return cls(sinks=sinks, **kwargs)
 
     @property
     def server(self):

@@ -160,3 +160,7 @@ cython_debug/
 
 # Working directoy storing outputs of processes
 workdir/
+
+# Terraform
+.terraform
+.terraform.lock.hcl

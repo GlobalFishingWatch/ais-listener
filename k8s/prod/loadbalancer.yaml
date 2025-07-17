@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: load-balancer-udp-marinetraffic
+  annotations:
+    cloud.google.com/load-balancer-type: 'External' # Forces NLB
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 35.192.154.116
+  externalTrafficPolicy: Local
+  selector:
+    app: socket-listener
+  ports:
+    - name: udp-port
+      protocol: UDP
+      port: 10111
+      targetPort: 5000

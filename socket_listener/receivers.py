@@ -14,7 +14,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 
 from .handlers import UDPRequestHandler
-from .monitor import ThreadMonitor
+from .monitor import ThreadMonitor, ExceptionMonitor
 from .sinks import create_sink
 
 
@@ -134,8 +134,6 @@ class SocketReceiver(ABC):
     ) -> None:
 
         self._poll_interval = poll_interval
-        self._thread_monitor = ThreadMonitor(delay=thread_monitor_delay)
-
         self._server = self.create_socketserver((host, port))
 
         # Following proprerties are needed by the request handler.
@@ -144,6 +142,14 @@ class SocketReceiver(ABC):
         self._server.delimiter = delimiter
         self._server.sinks = sinks
         self._server.provider_name = provider_name
+        self._server.exceptions = {}
+
+        self._thread_monitor = ThreadMonitor(delay=thread_monitor_delay)
+        self._exceptions_monitor = ExceptionMonitor(
+            exceptions=self._server.exceptions,
+            shutdown_server=self.shutdown,
+            delay=2,
+        )
 
     @staticmethod
     @abstractmethod
@@ -188,12 +194,15 @@ class SocketReceiver(ABC):
             logger.info(f"{sink.name}: {sink.path}")
 
         self._thread_monitor.start()
+        self._exceptions_monitor.start()
         with self._server:
             self._server.serve_forever(poll_interval=self._poll_interval)
 
     def shutdown(self):
         self._server.shutdown()
+        self._server.server_close()
         self._thread_monitor.stop()
+        self._exceptions_monitor.stop()
 
 
 class UDPSocketReceiver(SocketReceiver):

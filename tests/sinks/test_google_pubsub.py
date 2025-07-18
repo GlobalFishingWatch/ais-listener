@@ -49,7 +49,8 @@ def test_publish(monkeypatch, data_format, raw_data, expected_calls):
     # Assert publish called expected number of times with expected args
     assert mock_publish.call_count == len(expected_calls)
     for call_args in expected_calls:
-        mock_publish.assert_any_call(pubsub.path, *call_args, **packet.metadata)
+        expected_kwargs = {"topic": pubsub.path, "data": call_args[0], **packet.metadata}
+        mock_publish.assert_any_call(**expected_kwargs)
 
 
 def test_invalid_data_format_raises():

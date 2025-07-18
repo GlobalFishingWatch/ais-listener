@@ -4,6 +4,7 @@ import threading
 import socketserver
 
 from .packet import Packet
+from socket_listener.sinks.base import SinkError
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +32,16 @@ class DataPublisherMixIn:
             "Received {} message(s) from '{}' in {}."
             .format(packet.size, packet.source_name, threading.current_thread().name))
 
-        if logging.getLogger().level == logging.DEBUG:
-            packet.debug()
+        # TODO: Add a parameter to enable packet logging.
+        #       We don't always want to do this.
+        # if logging.getLogger().level == logging.DEBUG:
+        #    packet.debug()
 
-        for sink in self.server.sinks:
-            sink.publish(packet)
+        try:
+            for sink in self.server.sinks:
+                sink.publish(packet)
+        except SinkError as e:
+            self.server.exceptions[type(e)] = e
 
 
 class UDPRequestHandler(socketserver.BaseRequestHandler, DataPublisherMixIn):

@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socket-listener
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: socket-listener
+  template:
+    metadata:
+      labels:
+        app: socket-listener
+    spec:
+      containers:
+        - name: socket-listener-container
+          image: gcr.io/world-fishing-827/github.com/globalfishingwatch/ais-listener:v0.1.1dev
+          args: [
+            "receiver",
+            "-v",
+            "--provider-name", "marinetraffic",
+            "--port", "5000",
+            "--thread-monitor-delay", "10",
+            "--pubsub",
+            "--pubsub-project", "gfw-ingestion",
+            "--pubsub-topic", "nmea-stream",
+            "--no-rich-logging"
+          ]
+          env:
+            - name: UDP_PORT
+              value: '5000'
+          ports:
+            - containerPort: 5000
+              protocol: UDP

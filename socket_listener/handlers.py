@@ -31,8 +31,10 @@ class DataPublisherMixIn:
             "Received {} message(s) from '{}' in {}."
             .format(packet.size, packet.source_name, threading.current_thread().name))
 
-        if logging.getLogger().level == logging.DEBUG:
-            packet.debug()
+        # TODO: Add a parameter to enable packet logging.
+        #       We don't always want to do this.
+        # if logging.getLogger().level == logging.DEBUG:
+        #    packet.debug()
 
         for sink in self.server.sinks:
             sink.publish(packet)
@@ -46,4 +48,7 @@ class UDPRequestHandler(socketserver.BaseRequestHandler, DataPublisherMixIn):
             self.request consists of a pair of data and client socket."""
 
         data, _ = self.request
-        self.publish(data)
+        try:
+            self.publish(data)
+        except Exception as e:
+            self.server.exceptions[type(e)] = e

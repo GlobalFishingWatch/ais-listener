@@ -1,8 +1,10 @@
 """Contains class for Google Pub/Sub publication."""
 import logging
-from google.cloud import pubsub_v1
-
+from typing import Callable
 from functools import cached_property
+
+from google.cloud import pubsub_v1
+from google.api_core import exceptions
 
 from socket_listener.sinks.base import Sink
 from socket_listener.packet import Packet
@@ -14,7 +16,7 @@ class Format:
     RAW = "raw"
     SPLIT = "split"
 
-    ALL = {RAW, SPLIT}
+    ALL = frozenset([RAW, SPLIT])
 
 
 class GooglePubSub(Sink):
@@ -44,22 +46,34 @@ class GooglePubSub(Sink):
         return self._publisher.topic_path(self._project_id, self._topic_id)
 
     @cached_property
-    def publish_methods(self):
+    def publish_methods(self) -> dict[str, Callable[[Packet], None]]:
         return {
             Format.RAW: self._publish_raw,
             Format.SPLIT: self._publish_split,
         }
 
     def publish(self, packet: Packet) -> None:
+        """Publish a Packet to Google Pub/Sub using the selected format."""
         self.publish_methods[self._data_format](packet)
 
     def _publish_raw(self, packet: Packet) -> None:
-        self._publisher.publish(self.path, packet.data, **packet.metadata)
+        self._publish(data=packet.data, **packet.metadata)
 
     def _publish_split(self, packet: Packet) -> None:
-        # If packet.messages fails to split the packet, will return just the raw data.
+        # Attempt to split the packet. If it cannot be split, it will contain a single raw message.
         for message in packet.messages:
-            self._publisher.publish(self.path, message, **packet.metadata)
+            self._publish(data=message, **packet.metadata)
+
+    def _publish(self, data: bytes, **attrs: str) -> None:
+        try:
+            future = self._publisher.publish(topic=self.path, data=data, **attrs)
+            message_id = future.result(timeout=5.0)
+            logger.debug(f"Published message ID: {message_id}")
+        except exceptions.PermissionDenied as e:
+            logger.critical(f"Failed to publish message: {e}")
+            raise
+        except Exception as e:
+            logger.critical(f"Failed to publish message: {e}")
 
     def _validate_data_format(self, data_format: str) -> str:
         if data_format not in Format.ALL:

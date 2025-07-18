@@ -115,7 +115,7 @@ def cli(args):
         subcommands=[receiver_cmd, transmitter_cmd],
         logger_config=LoggerConfig(
             warning_level=[
-                "google.cloud.pubsub_v1.publisher",
+                # "google.cloud.pubsub_v1.publisher",
                 "urllib3.connectionpool",
                 "google.auth.transport.requests",
             ]

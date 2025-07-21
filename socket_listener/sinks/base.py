@@ -3,6 +3,10 @@ from socket_listener.packet import Packet
 from abc import ABC, abstractmethod
 
 
+class SinkError(Exception):
+    pass
+
+
 class Sink(ABC):
     """Base class for packet sinks."""
     @abstractmethod

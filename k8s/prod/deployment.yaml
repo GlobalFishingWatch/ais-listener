@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: socket-listener-container
-          image: gcr.io/world-fishing-827/github.com/globalfishingwatch/ais-listener:v0.1.1dev
+          image: gcr.io/world-fishing-827/github.com/globalfishingwatch/ais-listener:main
           args: [
             "receiver",
             "-v",

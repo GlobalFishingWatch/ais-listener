@@ -17,7 +17,6 @@ spec:
           image: gcr.io/world-fishing-827/github.com/globalfishingwatch/ais-listener:main
           args: [
             "receiver",
-            "-v",
             "--provider-name", "marinetraffic",
             "--port", "5000",
             "--thread-monitor-delay", "10",

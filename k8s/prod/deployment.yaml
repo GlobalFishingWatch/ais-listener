@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: socket-listener
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: socket-listener
@@ -31,3 +31,9 @@ spec:
           ports:
             - containerPort: 5000
               protocol: UDP
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+          requests:
+            memory: "2Gi"
+            cpu: "1"

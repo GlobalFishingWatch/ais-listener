@@ -31,9 +31,11 @@ spec:
           ports:
             - containerPort: 5000
               protocol: UDP
-          limits:
-            memory: "2Gi"
-            cpu: "1"
-          requests:
-            memory: "2Gi"
-            cpu: "1"
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+

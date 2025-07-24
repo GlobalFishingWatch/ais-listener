@@ -4,7 +4,7 @@ metadata:
   name: socket-listener
   namespace: socket-listener
 spec:
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
       app: socket-listener
@@ -34,8 +34,8 @@ spec:
               protocol: UDP
           resources:
             limits:
-              memory: "2Gi"
+              memory: "1Gi"
               cpu: "1"
             requests:
-              memory: "2Gi"
+              memory: "1Gi"
               cpu: "1"

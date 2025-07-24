@@ -39,13 +39,3 @@ spec:
             requests:
               memory: "2Gi"
               cpu: "1"
-          readinessProbe:
-            udpSocket:
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            udpSocket:
-              port: 5000
-            initialDelaySeconds: 5
-            periodSeconds: 10

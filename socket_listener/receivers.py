@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 
 from .handlers import UDPRequestHandler
+from .health_server import HealthCheckServer
 from .monitor import ThreadMonitor, ExceptionMonitor
 from .sinks import create_sink
 
@@ -120,6 +121,10 @@ class SocketReceiver(ABC):
 
         provider_name:
             Provider name to use in the metadata.
+
+        health_check_port:
+            The port to use for the HealthCheckServer.
+
     """
     def __init__(
         self,
@@ -131,6 +136,7 @@ class SocketReceiver(ABC):
         delimiter: str = "\n",
         sinks=(),
         provider_name: str = "Unknown",
+        health_check_port: int = 8080,
     ) -> None:
 
         self._poll_interval = poll_interval
@@ -144,6 +150,7 @@ class SocketReceiver(ABC):
         self._server.provider_name = provider_name
         self._server.exceptions = {}
 
+        self._health_server = HealthCheckServer(port=health_check_port)
         self._thread_monitor = ThreadMonitor(delay=thread_monitor_delay)
         self._exceptions_monitor = ExceptionMonitor(
             exceptions=self._server.exceptions,
@@ -195,14 +202,36 @@ class SocketReceiver(ABC):
 
         self._thread_monitor.start()
         self._exceptions_monitor.start()
-        with self._server:
-            self._server.serve_forever(poll_interval=self._poll_interval)
+
+        self._health_server.start()
+        self._health_server._is_running.wait(timeout=5)
+
+        self._health_server.set_ready_status(True)
+        logger.info("Application is now marked as READY for Kubernetes probes.")
+
+        try:
+            with self._server:
+                self._server.serve_forever(poll_interval=self._poll_interval)
+        except Exception as e:
+            logger.exception(f"Socket receiver server encountered an unhandled error: {e}.")
+            self._health_server.set_ready_status(False)
+            self._health_server.set_healthy_status(False)
+            raise e
+        finally:
+            self._health_server.set_ready_status(False)
+            self._health_server.set_healthy_status(False)
+            self.shutdown()
+            logger.info("Application is now marked as NOT READY for Kubernetes probes.")
 
     def shutdown(self):
+        logger.info("Shutting down socket receiver...")
         self._server.shutdown()
         self._server.server_close()
+
         self._thread_monitor.stop()
         self._exceptions_monitor.stop()
+        self._health_server.stop()
+        logger.info("Socket receiver shutdown complete.")
 
 
 class UDPSocketReceiver(SocketReceiver):
